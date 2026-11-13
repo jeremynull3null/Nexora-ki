@@ -1059,9 +1059,8 @@
                 } else if (isWeatherQuestion(rawText)) {
                     // Wetterabfragen nutzen echte Live-Wetterdaten und benötigen keinen KI-API-Schlüssel.
                     responseText = await fetchWeatherAnswer(rawText);
-                } else if (!apiKey) {
-                    responseText = '⚠️ **Kein Google Gemini API-Schlüssel hinterlegt.**\n\nBitte klicke links unten auf **KI-Setup & Backup** und füge deinen kostenlosen API-Schlüssel ein (erhältlich auf **aistudio.google.com**), damit NEXORA antworten kann.';
                 } else {
+                    // Gemini-Schlüssel liegt sicher auf Cloudflare; im Browser gibt es keine apiKey-Variable.
                     let webContext = '';
                     if (webSearchEnabled && rawText) {
                         webContext = await fetchLiveWebContext(rawText);
