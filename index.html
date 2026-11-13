@@ -345,9 +345,9 @@
             </div>
             <div class="space-y-4 text-sm">
                 <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1">Google Gemini API-Schlüssel (Kostenlos über Google AI Studio)</label>
-                    <input type="password" id="api-key-input" placeholder="AIzaSy..." class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
-                    <p class="text-[11px] text-gray-500 mt-1">Der Schlüssel wird in diesem Browser gespeichert und bei KI-Anfragen direkt an Google gesendet. Nicht für eine öffentliche Website verwenden. Kostenloser Zugang: <b>aistudio.google.com</b>.</p>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Sichere NEXORA-Serververbindung</label>
+                    <div class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-3 text-sm text-emerald-300">Der Gemini-Schlüssel wird sicher auf dem Cloudflare-Server verwaltet. Du musst ihn hier nicht eingeben.</div>
+                    <p class="text-[11px] text-gray-500 mt-1">Der geheime Schlüssel wird nicht in dieser Webseite oder im Browser gespeichert.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-400 mb-1">Aktuelles Google Gemini Modell (Kostenloser Tarif)</label>
@@ -478,14 +478,15 @@
         let currentChatId = null;
         let memories = readStoredArray('nexora_memories_v5');
         let tasks = readStoredArray('nexora_tasks_v5');
-        let apiKey = localStorage.getItem('nexora_apikey') || '';
+        const NEXORA_API_URL = 'https://nexora-api.jeremy-freu.workers.dev';
+        let apiConnected = false;
         let selectedModel = localStorage.getItem('nexora_model') || 'gemini-3.8-flash';
         const supportedModels = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
         if (supportedModels.indexOf(selectedModel) === -1) {
             selectedModel = 'gemini-3.8-flash';
             localStorage.setItem('nexora_model', selectedModel);
         }
-
+        // Entfernt einen eventuell aus einer älteren Version lokal gespeicherten API-Schlüssel.\n        localStorage.removeItem('nexora_apikey');\n
         let webSearchEnabled = false;
         let ttsEnabled = false;
         let isSending = false;
@@ -506,7 +507,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('sidebar-username').innerText = username;
             document.getElementById('username-input').value = username;
-            document.getElementById('api-key-input').value = apiKey;
             document.getElementById('model-select').value = selectedModel;
             document.getElementById('current-model-info').innerText = 'Modell: ' + selectedModel;
             const savedGreeting = localStorage.getItem('nexora_welcome_text');
@@ -524,49 +524,32 @@
                 loadChat(chats[0].id);
             }
 
-            // Lädt den gespeicherten API-Schlüssel nach und übernimmt alte Browser-Einstellungen.
+            // Prüft die Verbindung zum sicheren NEXORA-Backend.
             loadPersistentApiSettings();
         });
 
         async function loadPersistentApiSettings() {
             try {
-                const response = await fetch('/api/settings', { cache: 'no-store' });
+                const response = await fetch(NEXORA_API_URL + '/health', { cache: 'no-store' });
                 if (!response.ok) throw new Error('HTTP ' + response.status);
-                const saved = await response.json();
-
-                if (saved && saved.apiKey) {
-                    apiKey = saved.apiKey;
-                    if (saved.model && document.getElementById('model-select').querySelector('option[value="' + saved.model + '"]')) {
-                        selectedModel = saved.model;
-                        localStorage.setItem('nexora_model', selectedModel);
-                    }
-                    localStorage.removeItem('nexora_apikey');
-                } else if (apiKey) {
-                    // Einmalige Übernahme eines Schlüssels aus einer älteren NEXORA-Version.
-                    const migrate = await fetch('/api/settings', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ apiKey: apiKey, model: selectedModel })
-                    });
-                    if (migrate.ok) localStorage.removeItem('nexora_apikey');
-                }
-
-                document.getElementById('api-key-input').value = apiKey;
-                document.getElementById('model-select').value = selectedModel;
-                document.getElementById('current-model-info').innerText = 'Modell: ' + selectedModel;
+                const status = await response.json();
+                apiConnected = status.ok === true && status.keyConfigured === true;
                 updateConnectionBadge();
+                const adminStatus = document.getElementById('admin-api-status');
+                if (adminStatus) adminStatus.innerText = apiConnected ? 'Verbunden (Cloudflare)' : 'Backend-Schlüssel fehlt';
             } catch (err) {
-                // Bei file:// oder ohne lokalen Server bleibt die alte Browser-Speicherung nutzbar.
-                console.warn('Persistente Windows-Einstellungen nicht erreichbar:', err);
+                apiConnected = false;
+                updateConnectionBadge();
+                console.warn('NEXORA-Backend nicht erreichbar:', err);
             }
         }
 
         function updateConnectionBadge() {
             const indicator = document.getElementById('status-indicator');
-            if (apiKey && apiKey.length > 10) {
-                indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-400 truncate">API-Key hinterlegt</span>';
+            if (apiConnected) {
+                indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-400 truncate">NEXORA-API verbunden</span>';
             } else {
-                indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="text-amber-400 truncate">Kein API-Key</span>';
+                indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="text-amber-400 truncate">API nicht erreichbar</span>';
             }
         }
 
@@ -1102,7 +1085,7 @@
         }
 
         async function callGeminiAPI(prompt, webContext, imageBase64, imageMime) {
-            const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(selectedModel) + ':generateContent';
+            const url = NEXORA_API_URL + '/api/generate';
 
             let systemParts = [
                 'Du bist NEXORA 5.4, ein freundlicher, hilfsbereiter und präziser persönlicher KI-Assistent.',
@@ -1156,8 +1139,8 @@
 
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-                body: JSON.stringify(payload)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: selectedModel, payload: payload })
             });
 
             if (!response.ok) {
@@ -1645,64 +1628,41 @@
         }
 
         async function saveSettings() {
-            apiKey = document.getElementById('api-key-input').value.trim();
             selectedModel = document.getElementById('model-select').value;
             localStorage.setItem('nexora_model', selectedModel);
             document.getElementById('current-model-info').innerText = 'Modell: ' + selectedModel;
-            const savedGreeting = localStorage.getItem('nexora_welcome_text');
-            if (savedGreeting !== null) { const greetingNode = document.getElementById('nexora-welcome-text'); if (greetingNode) greetingNode.textContent = savedGreeting; }
-            updateConnectionBadge();
-
-            // Bevorzugt verschlüsselte Speicherung durch den lokalen Windows-Server.
-            try {
-                const response = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ apiKey: apiKey, model: selectedModel })
-                });
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                localStorage.removeItem('nexora_apikey');
-                alert('Einstellungen gespeichert. Dein API-Schlüssel wird verschlüsselt unter deinem Windows-Benutzerkonto aufbewahrt.');
-            } catch (err) {
-                // Mobile/Web-Fallback: Schlüssel bleibt in diesem Browserprofil gespeichert.
-                localStorage.setItem('nexora_apikey', apiKey);
-                alert('Einstellungen auf diesem Gerät im Browser gespeichert. Sie bleiben bei normalen Updates derselben Website erhalten. Nutze ein Backup und lösche die Browserdaten nicht.');
-            }
+            await loadPersistentApiSettings();
+            alert('Modell-Einstellung gespeichert. Der API-Schlüssel bleibt sicher auf dem NEXORA-Server.');
         }
 
         async function testAPIConnection() {
-            const keyToTest = document.getElementById('api-key-input').value.trim();
             const modelToTest = document.getElementById('model-select').value;
             const resBox = document.getElementById('api-test-result');
-
-            if (!keyToTest) {
-                resBox.className = 'p-3 rounded-xl text-xs border border-amber-500/40 bg-amber-500/10 text-amber-300';
-                resBox.innerText = 'Bitte gib zuerst einen Google Gemini API-Schlüssel ein.';
-                resBox.classList.remove('hidden');
-                return;
-            }
-
             resBox.className = 'p-3 rounded-xl text-xs border border-blue-500/40 bg-blue-500/10 text-blue-300';
-            resBox.innerText = 'Teste Verbindung zu ' + modelToTest + '...';
+            resBox.innerText = 'Teste die sichere NEXORA-Verbindung...';
             resBox.classList.remove('hidden');
 
             try {
-                const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelToTest) + ':generateContent';
-                const response = await fetch(url, {
+                const response = await fetch(NEXORA_API_URL + '/api/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': keyToTest },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ role: 'user', parts: [{ text: 'Antworte nur mit: Verbindung erfolgreich.' }] }]
+                        model: modelToTest,
+                        payload: {
+                            contents: [{ role: 'user', parts: [{ text: 'Antworte nur mit: Verbindung erfolgreich.' }] }]
+                        }
                     })
                 });
                 const data = await response.json();
                 if (!response.ok) {
-                    throw new Error((data.error && data.error.message) || 'Status ' + response.status);
+                    throw new Error((data.error && data.error.message) || data.error || 'Status ' + response.status);
                 }
-                const reply = data.candidates[0].content.parts[0].text;
+                const reply = data.candidates && data.candidates[0] && data.candidates[0].content &&
+                    data.candidates[0].content.parts && data.candidates[0].content.parts[0]
+                    ? data.candidates[0].content.parts[0].text : 'Antwort erhalten.';
                 resBox.className = 'p-3 rounded-xl text-xs border border-emerald-500/40 bg-emerald-500/10 text-emerald-300';
-                resBox.innerText = '✅ Erfolg! Antwort der KI: "' + reply.trim() + '"';
-                saveSettings();
+                resBox.innerText = '✅ Erfolg! NEXORA antwortet: "' + String(reply || '').trim() + '"';
+                await saveSettings();
             } catch (err) {
                 resBox.className = 'p-3 rounded-xl text-xs border border-red-500/40 bg-red-500/10 text-red-300';
                 resBox.innerText = '❌ Verbindung fehlgeschlagen: ' + err.message;
@@ -1769,7 +1729,7 @@
             closeModal('admin-login-modal');
             document.getElementById('admin-welcome-input').value = localStorage.getItem('nexora_welcome_text') || 'Deine persönliche KI für alles. Stelle komplexe Fragen, analysiere PDF/DOCX/Bilder, recherchiere im Web oder verwalte deinen Kalender.';
             document.getElementById('admin-maintenance-input').checked = localStorage.getItem('nexora_maintenance') === 'true';
-            document.getElementById('admin-api-status').innerText = apiKey ? 'API-Key hinterlegt' : 'Kein API-Key';
+            document.getElementById('admin-api-status').innerText = apiConnected ? 'Verbunden (Cloudflare)' : 'Verbindung wird geprüft';
             showAdminTab('overview');
             openModal('admin-center-modal');
         }
