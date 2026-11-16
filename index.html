@@ -186,8 +186,8 @@
                     </p>
                 </div>
             </div>
-            <button onclick="openModal('login-modal')" title="Profil bearbeiten" class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition">
-                <i class="fa-solid fa-pen-to-square text-sm"></i>
+            <button onclick="openNexoraAccount()" title="Anmelden oder Konto verwalten" class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition">
+                <i class="fa-solid fa-user-lock text-sm"></i>
             </button>
         </div>
     </aside>
@@ -449,16 +449,28 @@
         </div>
     </div>
 
-    <!-- PROFILE MODAL -->
+    <!-- NEXORA ACCOUNT MODAL -->
     <div id="login-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="bg-nexora-card border border-nexora-border w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl text-center">
-            <div class="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 mx-auto flex items-center justify-center text-xl">
-                <i class="fa-solid fa-user-check"></i>
+        <div class="bg-nexora-card border border-nexora-border w-full max-w-sm rounded-2xl p-6 space-y-3 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-white">NEXORA-Konto</h3>
+                <button onclick="closeModal('login-modal')" class="text-gray-400 p-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <h3 class="font-bold text-lg text-white">Lokales Benutzerprofil</h3>
-            <p class="text-xs text-gray-400">Dein Name wird für die persönliche Ansprache verwendet.</p>
-            <input type="text" id="username-input" placeholder="Dein Name" class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-center">
-            <button onclick="saveUsername()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-medium transition">Speichern</button>
+            <p id="auth-description" class="text-xs text-gray-400">Melde dich an oder erstelle ein kostenloses Konto. Als Gast kannst du normal chatten.</p>
+            <div id="auth-fields" class="space-y-3">
+                <input id="auth-email" type="email" autocomplete="email" placeholder="E-Mail-Adresse" class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-3 text-sm text-white">
+                <input id="auth-password" type="password" autocomplete="current-password" placeholder="Passwort (mindestens 8 Zeichen)" class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-3 text-sm text-white">
+            </div>
+            <p id="auth-status" class="hidden text-xs rounded-lg p-2" role="status" aria-live="polite"></p>
+            <button id="auth-submit" onclick="submitNexoraAuth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium">Anmelden</button>
+            <button id="auth-switch" onclick="toggleNexoraAuthMode()" class="w-full text-blue-300 text-sm py-2">Noch kein Konto? Konto erstellen</button>
+            <div id="auth-logged-in" class="hidden space-y-2">
+                <p id="auth-user-label" class="text-sm text-emerald-300"></p>
+                <input type="text" id="username-input" placeholder="Anzeigename (optional)" class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-sm text-white">
+                <button onclick="saveUsername()" class="w-full bg-gray-700 text-white py-2 rounded-xl">Namen speichern</button>
+                <button onclick="signOutNexora()" class="w-full bg-red-700 text-white py-2 rounded-xl">Abmelden</button>
+            </div>
+            <p class="text-[10px] text-gray-500">Die Anmeldung wird sicher über den NEXORA-Server geprüft.</p>
         </div>
     </div>
 
@@ -483,6 +495,106 @@
         let memories = readStoredArray('nexora_memories_v5');
         let tasks = readStoredArray('nexora_tasks_v5');
         const NEXORA_API_URL = 'https://ancient-waterfall-5c99.jeremy-freu.workers.dev';
+
+        let nexoraSession = null;
+        let nexoraUser = null;
+        let nexoraAuthMode = 'login';
+        function authHeaders(extra) {
+            const headers = Object.assign({}, extra || {});
+            if (nexoraSession && nexoraSession.access_token) headers.Authorization = 'Bearer ' + nexoraSession.access_token;
+            return headers;
+        }
+        function showAuthStatus(message, isError) {
+            const el = document.getElementById('auth-status');
+            el.textContent = message;
+            el.classList.remove('hidden', 'text-red-300', 'text-emerald-300', 'bg-red-500/10', 'bg-emerald-500/10');
+            el.classList.add(isError ? 'text-red-300' : 'text-emerald-300', isError ? 'bg-red-500/10' : 'bg-emerald-500/10');
+        }
+        function openNexoraAccount() {
+            const loggedIn = !!(nexoraSession && nexoraSession.access_token);
+            document.getElementById('auth-fields').classList.toggle('hidden', loggedIn);
+            document.getElementById('auth-submit').classList.toggle('hidden', loggedIn);
+            document.getElementById('auth-switch').classList.toggle('hidden', loggedIn);
+            document.getElementById('auth-logged-in').classList.toggle('hidden', !loggedIn);
+            document.getElementById('auth-description').textContent = loggedIn ? 'Du bist angemeldet.' : 'Melde dich an oder erstelle ein kostenloses Konto. Als Gast kannst du normal chatten.';
+            if (loggedIn) {
+                document.getElementById('auth-user-label').textContent = 'Angemeldet: ' + ((nexoraUser && nexoraUser.email) || '');
+                document.getElementById('username-input').value = username;
+            }
+            document.getElementById('auth-status').classList.add('hidden');
+            openModal('login-modal');
+        }
+        function toggleNexoraAuthMode() {
+            nexoraAuthMode = nexoraAuthMode === 'login' ? 'signup' : 'login';
+            document.getElementById('auth-submit').textContent = nexoraAuthMode === 'login' ? 'Anmelden' : 'Konto erstellen';
+            document.getElementById('auth-switch').textContent = nexoraAuthMode === 'login' ? 'Noch kein Konto? Konto erstellen' : 'Schon ein Konto? Jetzt anmelden';
+            document.getElementById('auth-password').autocomplete = nexoraAuthMode === 'login' ? 'current-password' : 'new-password';
+            document.getElementById('auth-status').classList.add('hidden');
+        }
+        async function submitNexoraAuth() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            if (!email || !password) return showAuthStatus('Bitte E-Mail-Adresse und Passwort eingeben.', true);
+            if (nexoraAuthMode === 'signup' && password.length < 8) return showAuthStatus('Das Passwort muss mindestens 8 Zeichen haben.', true);
+            const button = document.getElementById('auth-submit');
+            button.disabled = true;
+            button.textContent = 'Bitte warten…';
+            try {
+                const response = await fetch(NEXORA_API_URL + (nexoraAuthMode === 'login' ? '/api/auth/login' : '/api/auth/signup'), {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+                    body: JSON.stringify({ email: email, password: password })
+                });
+                const data = await response.json().catch(function(){ return {}; });
+                if (!response.ok || !data.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Anmeldung fehlgeschlagen.');
+                if (nexoraAuthMode === 'signup' && !(data.session && data.session.access_token)) {
+                    showAuthStatus(data.message || 'Konto erstellt. Bitte bestätige deine E-Mail und melde dich danach an.', false);
+                    nexoraAuthMode = 'login';
+                    document.getElementById('auth-submit').textContent = 'Anmelden';
+                    document.getElementById('auth-switch').textContent = 'Noch kein Konto? Konto erstellen';
+                    return;
+                }
+                nexoraSession = data.session;
+                nexoraUser = data.user || null;
+                localStorage.setItem('nexora_auth_session', JSON.stringify(nexoraSession));
+                document.getElementById('sidebar-username').textContent = (nexoraUser && nexoraUser.email) || username;
+                showAuthStatus('Erfolgreich angemeldet. Konto-Funktionen sind freigeschaltet.', false);
+                setTimeout(function(){ closeModal('login-modal'); }, 900);
+            } catch (error) {
+                showAuthStatus(error.message || 'Verbindung fehlgeschlagen.', true);
+            } finally {
+                button.disabled = false;
+                button.textContent = nexoraAuthMode === 'login' ? 'Anmelden' : 'Konto erstellen';
+            }
+        }
+        async function restoreNexoraSession() {
+            try {
+                const saved = localStorage.getItem('nexora_auth_session');
+                if (!saved) return;
+                const session = JSON.parse(saved);
+                if (!session || !session.access_token) return;
+                const response = await fetch(NEXORA_API_URL + '/api/auth/me', { headers: { Authorization: 'Bearer ' + session.access_token }, cache: 'no-store' });
+                const data = await response.json().catch(function(){ return {}; });
+                if (!response.ok || !data.ok) throw new Error('Session abgelaufen');
+                nexoraSession = session; nexoraUser = data.user || null;
+                document.getElementById('sidebar-username').textContent = (nexoraUser && nexoraUser.email) || username;
+            } catch (_) {
+                nexoraSession = null; nexoraUser = null;
+                localStorage.removeItem('nexora_auth_session');
+            }
+        }
+        function requireNexoraLogin(feature) {
+            if (nexoraSession && nexoraSession.access_token) return true;
+            openNexoraAccount();
+            showAuthStatus('Bitte melde dich an, um ' + feature + ' zu verwenden. Der normale Textchat bleibt als Gast verfügbar.', true);
+            return false;
+        }
+        function signOutNexora() {
+            nexoraSession = null; nexoraUser = null;
+            localStorage.removeItem('nexora_auth_session');
+            document.getElementById('sidebar-username').textContent = username;
+            closeModal('login-modal');
+        }
+
         let apiConnected = false;
         let selectedModel = localStorage.getItem('nexora_model') || 'gemini-3.8-flash';
         const supportedModels = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
@@ -531,6 +643,7 @@
 
             // Prüft die Verbindung zum sicheren NEXORA-Backend.
             loadPersistentApiSettings();
+            restoreNexoraSession();
         });
 
         async function loadPersistentApiSettings() {
@@ -847,6 +960,7 @@
         }
 
         async function generateImageFree(prompt) {
+            if (!requireNexoraLogin('Bildgenerierung')) throw new Error('Bitte melde dich zuerst an.');
             const cleanPrompt = String(prompt || '').trim();
             if (!cleanPrompt) throw new Error('Bitte beschreibe, welches Bild ich erstellen soll.');
 
@@ -855,7 +969,7 @@
             try {
                 const fluxResponse = await fetch(NEXORA_API_URL + '/api/image/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     cache: 'no-store',
                     body: JSON.stringify({ prompt: cleanPrompt })
                 });
@@ -875,7 +989,7 @@
             try {
                 const submitResponse = await fetch(NEXORA_API_URL + '/api/image/async', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     cache: 'no-store',
                     body: JSON.stringify({ prompt: cleanPrompt })
                 });
@@ -887,11 +1001,11 @@
                 const started = Date.now();
                 while (Date.now() - started < 360000) {
                     await new Promise(function(resolve) { setTimeout(resolve, 4000); });
-                    const checkResponse = await fetch(NEXORA_API_URL + '/api/image/check/' + encodeURIComponent(submitted.id), { cache: 'no-store' });
+                    const checkResponse = await fetch(NEXORA_API_URL + '/api/image/check/' + encodeURIComponent(submitted.id), { headers: authHeaders(), cache: 'no-store' });
                     const check = await checkResponse.json().catch(function() { return {}; });
                     if (!checkResponse.ok || !check.ok) throw new Error(check.error && check.error.message ? check.error.message : 'AI-Horde-Status konnte nicht abgefragt werden.');
                     if (check.done) {
-                        const statusResponse = await fetch(NEXORA_API_URL + '/api/image/status/' + encodeURIComponent(submitted.id), { cache: 'no-store' });
+                        const statusResponse = await fetch(NEXORA_API_URL + '/api/image/status/' + encodeURIComponent(submitted.id), { headers: authHeaders(), cache: 'no-store' });
                         const status = await statusResponse.json().catch(function() { return {}; });
                         const generation = status.generations && status.generations[0];
                         if (!statusResponse.ok || !status.ok || !generation || !generation.img) throw new Error('AI Horde hat kein fertiges Bild geliefert.');
@@ -1228,6 +1342,7 @@
         }
 
         async function handleFileUpload(e) {
+            if (!requireNexoraLogin('Datei- und Bildanalyse')) { e.target.value = ''; return; }
             const file = e.target.files[0];
             if (!file) return;
 
