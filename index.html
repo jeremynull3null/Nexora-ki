@@ -1,21 +1,1783 @@
-<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 border border-cyan-400/40 flex items-center justify-center shadow-lg shadow-blue-500/25">
-    <svg width="29" height="29" viewBox="0 0 36 36" fill="none"
-         xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="nexoraLogoGradient"
-                x1="5" y1="5" x2="31" y2="31"
-                gradientUnits="userSpaceOnUse">
-                <stop stop-color="#67E8F9"/>
-                <stop offset="0.5" stop-color="#3B82F6"/>
-                <stop offset="1" stop-color="#A78BFA"/>
-            </linearGradient>
-        </defs>
-        <path d="M8 28V8L28 28V8"
-              stroke="url(#nexoraLogoGradient)"
-              stroke-width="3.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"/>
-        <circle cx="8" cy="8" r="2.2" fill="#67E8F9"/>
-        <circle cx="28" cy="28" r="2.2" fill="#A78BFA"/>
-    </svg>
-</div>
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#070B14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>NEXORA 5.4 – Kostenlose Bildgenerierung – Die KI für alles</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        nexora: {
+                            dark: '#070B14',
+                            card: '#0F1626',
+                            border: '#1E293B',
+                            primary: '#3B82F6',
+                            hover: '#2563EB',
+                            accent: '#60A5FA'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Marked & DOMPurify -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
+    <!-- JSZip for local ZIP update packages -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- PDF.js & Mammoth.js for client-side file parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #070B14; }
+        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        .glow-effect { box-shadow: 0 0 28px rgba(59, 130, 246, 0.18); }
+        .prose pre { background: #070B14; padding: 0.75rem; border-radius: 0.5rem; overflow-x: auto; border: 1px solid #1E293B; margin: 0.5rem 0; }
+        .prose code { font-family: monospace; font-size: 0.85em; color: #93C5FD; }
+        .prose p { margin-bottom: 0.5rem; }
+        .prose p:last-child { margin-bottom: 0; }
+        .prose ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.5rem; }
+        .prose ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.5rem; }
+        /* NEXORA Mobile: safe-area, touch targets and small-screen layout */
+        * { -webkit-tap-highlight-color: transparent; }
+        button, input, select, textarea { touch-action: manipulation; }
+        input, select, textarea { font-size: 16px; }
+        @media (max-width: 767px) {
+            html, body { width: 100%; height: 100%; min-height: 100%; overflow: hidden; }
+            body { height: 100dvh; min-height: 100dvh; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+            #sidebar { width: min(86vw, 340px); max-width: 340px; padding-bottom: env(safe-area-inset-bottom); }
+            main { min-width: 0; width: 100%; height: 100%; }
+            main > header { min-height: 56px; height: 56px; padding-left: 12px; padding-right: 12px; }
+            main > header button { min-width: 40px; min-height: 40px; }
+            #chat-container, #chat-messages { min-width: 0; }
+            #chat-messages { padding-left: 12px !important; padding-right: 12px !important; }
+            #chat-input-area { padding-left: 10px !important; padding-right: 10px !important; padding-bottom: max(10px, env(safe-area-inset-bottom)) !important; }
+            #chat-input { max-height: 120px; }
+            .modal, [id$="-modal"] { overscroll-behavior: contain; }
+            [id$="-modal"] > div { max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+            #admin-center-modal > div { width: 100%; max-width: 100%; }
+            #admin-center-modal .admin-tab { min-height: 42px; }
+            button { min-height: 40px; }
+        }
+        @media (max-width: 380px) {
+            main > header { padding-left: 8px; padding-right: 8px; }
+            #chat-messages { padding-left: 8px !important; padding-right: 8px !important; }
+            #sidebar { width: 88vw; }
+        }
+    </style>
+
+    <style id="nexora-orb-update">
+      #nexora-voice-orb {
+        position: fixed; right: 22px; bottom: 112px; z-index: 70;
+        width: 76px; height: 76px; border: 1px solid rgba(125,211,252,.8);
+        border-radius: 50%; cursor: pointer;
+        background: radial-gradient(circle at 34% 28%, #e0fbff 0%, #72ddff 18%, #328bff 48%, #2932a8 72%, #10143e 100%);
+        box-shadow: 0 0 18px rgba(56,189,248,.9), 0 0 42px rgba(59,130,246,.65), inset 0 0 18px rgba(255,255,255,.35);
+        display:flex; align-items:center; justify-content:center; color:white;
+        transition: transform .2s ease, box-shadow .2s ease;
+      }
+      #nexora-voice-orb:hover { transform: scale(1.07); box-shadow:0 0 25px #38bdf8,0 0 58px rgba(59,130,246,.85); }
+      #nexora-voice-orb i { font-size:25px; filter: drop-shadow(0 1px 3px #102050); }
+      #nexora-voice-orb.listening { animation: nexora-pulse 1.2s ease-in-out infinite; border-color:#fda4af; }
+      #nexora-voice-orb.listening i { color:#fff1f2; }
+      #nexora-voice-orb-label {
+        position:fixed; right:13px; bottom:91px; z-index:70; color:#cfe8ff;
+        font: 11px system-ui,sans-serif; background:rgba(7,11,20,.8);
+        border:1px solid rgba(96,165,250,.35); border-radius:999px; padding:4px 9px;
+        pointer-events:none;
+      }
+      @keyframes nexora-pulse { 0%,100% { transform:scale(1); box-shadow:0 0 18px #38bdf8,0 0 42px rgba(59,130,246,.65); } 50% { transform:scale(1.09); box-shadow:0 0 28px #fb7185,0 0 65px rgba(244,63,94,.6); } }
+      @media(max-width:600px) { #nexora-voice-orb { width:66px;height:66px;right:14px;bottom:105px; } #nexora-voice-orb-label {right:7px;bottom:84px;} }
+    </style>
+
+</head>
+<body class="bg-nexora-dark text-gray-100 h-screen flex overflow-hidden">
+
+    <!-- MOBILE BACKDROP -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 w-72 bg-nexora-card border-r border-nexora-border flex flex-col transition-transform duration-300 z-30">
+        <!-- Logo -->
+        <div class="p-4 border-b border-nexora-border flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 border border-cyan-400/40 flex items-center justify-center shadow-lg shadow-blue-500/25" aria-label="NEXORA Logo">
+                    <svg width="29" height="29" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="N">
+                        <defs><linearGradient id="nexoraLogoGradient" x1="5" y1="5" x2="31" y2="31" gradientUnits="userSpaceOnUse"><stop stop-color="#67E8F9"/><stop offset="0.5" stop-color="#3B82F6"/><stop offset="1" stop-color="#A78BFA"/></linearGradient></defs>
+                        <path d="M8 28V8L28 28V8" stroke="url(#nexoraLogoGradient)" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="8" cy="8" r="2.2" fill="#67E8F9"/><circle cx="28" cy="28" r="2.2" fill="#A78BFA"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide text-white">NEXORA <span class="text-xs bg-blue-600/20 text-blue-400 px-1.5 py-0.5 rounded">5.2</span></h1>
+                    <p class="text-xs text-blue-400 font-medium">Die KI für alles</p>
+                </div>
+            </div>
+            <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white md:hidden p-1">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <!-- New Chat Button -->
+        <div class="p-4">
+            <button onclick="startNewChat()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2 transition shadow-lg shadow-blue-600/20">
+                <i class="fa-solid fa-plus"></i>
+                <span>Neuer Chat</span>
+            </button>
+        </div>
+
+        <!-- Chat History -->
+        <div class="px-4 pb-1 flex items-center justify-between text-xs text-gray-500 uppercase tracking-wider font-semibold">
+            <span>Verlauf</span>
+            <span id="chat-count">0</span>
+        </div>
+        <div class="flex-1 overflow-y-auto px-4 py-1 space-y-1" id="chat-history-list"></div>
+
+        <!-- Tools Navigation -->
+        <div class="p-3 border-t border-nexora-border space-y-1">
+            <button onclick="openModal('weather-modal')" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800/80 hover:text-white flex items-center space-x-3 transition">
+                <i class="fa-solid fa-cloud-sun text-blue-400 w-5 text-center"></i>
+                <span>Wetter & Vorhersage</span>
+            </button>
+            <button onclick="openModal('calendar-modal')" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800/80 hover:text-white flex items-center space-x-3 transition">
+                <i class="fa-solid fa-calendar-days text-indigo-400 w-5 text-center"></i>
+                <span>Kalender & Aufgaben</span>
+            </button>
+            <button onclick="openModal('memory-modal')" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800/80 hover:text-white flex items-center space-x-3 transition">
+                <i class="fa-solid fa-memory text-purple-400 w-5 text-center"></i>
+                <span>Langzeitgedächtnis</span>
+            </button>
+            <button onclick="openModal('admin-modal')" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800/80 hover:text-white flex items-center space-x-3 transition">
+                <i class="fa-solid fa-sliders text-emerald-400 w-5 text-center"></i>
+                <span>Einstellungen & KI-Setup</span>
+            </button>
+            <button onclick="openAdminGate()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800/80 hover:text-white flex items-center space-x-3 transition">
+                <i class="fa-solid fa-shield-halved text-amber-400 w-5 text-center"></i>
+                <span>Admin Control Center</span>
+            </button>
+        </div>
+
+        <!-- User & Status -->
+        <div class="p-3 border-t border-nexora-border flex items-center justify-between bg-black/30">
+            <div class="flex items-center space-x-2.5 overflow-hidden">
+                <div class="w-8 h-8 rounded-full bg-blue-950 border border-blue-800 flex items-center justify-center text-xs font-bold text-blue-300 flex-shrink-0">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-sm font-medium text-white truncate" id="sidebar-username">Lokaler Benutzer</p>
+                    <p class="text-xs flex items-center space-x-1.5" id="status-indicator">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span class="text-amber-400 truncate">Kein API-Key</span>
+                    </p>
+                </div>
+            </div>
+            <button onclick="openModal('login-modal')" title="Profil bearbeiten" class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition">
+                <i class="fa-solid fa-pen-to-square text-sm"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CHAT AREA -->
+    <main class="flex-1 flex flex-col h-full bg-nexora-dark relative min-w-0">
+        <!-- Header -->
+        <header class="h-16 border-b border-nexora-border flex items-center justify-between px-4 md:px-6 bg-nexora-card/70 backdrop-blur z-10">
+            <div class="flex items-center space-x-3 min-w-0">
+                <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white md:hidden p-2 rounded-lg hover:bg-gray-800">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div class="truncate">
+                    <h2 class="font-semibold text-white truncate" id="current-chat-title">Neues Gespräch</h2>
+                    <p class="text-xs text-gray-400 truncate" id="current-model-info">Modell: gemini-2.5-flash</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 flex-shrink-0">
+                <button onclick="toggleTTS()" id="tts-toggle" title="Sprachausgabe (Vorlesen)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-700 text-gray-400 hover:border-purple-500 hover:text-purple-400 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-volume-xmark" id="tts-icon"></i>
+                    <span class="hidden sm:inline" id="tts-label">Vorlesen: Aus</span>
+                </button>
+                <button onclick="toggleWebSearch()" id="web-search-toggle" title="Live-Websuche (Wikipedia & DuckDuckGo)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-700 text-gray-400 hover:border-blue-500 hover:text-blue-400 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-globe"></i>
+                    <span class="hidden sm:inline" id="web-search-label">Websuche: Aus</span>
+                </button>
+                <button onclick="clearCurrentChat()" title="Aktuellen Chat leeren" class="text-gray-400 hover:text-red-400 p-2 rounded-lg hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-trash-can text-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Messages -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6"></div>
+
+        <!-- Input Area -->
+        <div class="p-3 md:p-5 bg-gradient-to-t from-nexora-dark via-nexora-dark to-transparent">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-nexora-card border border-nexora-border rounded-2xl p-2 focus-within:border-blue-500 transition shadow-xl">
+                    <!-- Attachment Preview -->
+                    <div id="file-attachment-preview" class="hidden px-3 py-1.5 mb-2 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center justify-between text-xs text-blue-300">
+                        <div class="flex items-center space-x-2 truncate">
+                            <i class="fa-solid fa-file-circle-check"></i>
+                            <span id="attached-filename" class="truncate font-medium">Datei</span>
+                        </div>
+                        <button onclick="removeAttachment()" class="text-blue-400 hover:text-white ml-2"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <textarea id="user-input" rows="1" placeholder="Frage NEXORA etwas... (Enter zum Senden, Shift+Enter für Zeilenumbruch)" onkeydown="handleKeydown(event)" oninput="autoResize(this)" class="w-full bg-transparent text-gray-100 placeholder-gray-500 px-3 py-2 focus:outline-none resize-none text-sm"></textarea>
+                    
+                    <div class="flex items-center justify-between px-2 pt-2 border-t border-nexora-border/50">
+                        <div class="flex items-center space-x-1">
+                            <label class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg cursor-pointer transition" title="Datei oder Bild hochladen (TXT, MD, CSV, JSON, PDF, DOCX, PNG, JPG)">
+                                <i class="fa-solid fa-paperclip text-sm"></i>
+                                <input type="file" id="file-upload-input" onchange="handleFileUpload(event)" class="hidden" accept=".txt,.md,.csv,.json,.pdf,.docx,.png,.jpg,.jpeg,.webp">
+                            </label>
+                            <button onclick="toggleVoiceInput()" id="voice-btn" class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition" title="Spracheingabe starten">
+                                <i class="fa-solid fa-microphone text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span id="token-counter" class="text-xs text-gray-500">0 Zeichen</span>
+                            <button onclick="sendMessage()" id="send-btn" class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 h-9 rounded-xl flex items-center justify-center space-x-1.5 transition shadow-md shadow-blue-600/20 text-xs font-medium">
+                                <span>Senden</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-center text-[11px] text-gray-500 mt-2">NEXORA 5.4 • Die KI für alles • Überprüfe wichtige Informationen.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- WEATHER MODAL -->
+    <div id="weather-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-nexora-card border border-nexora-border w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-cloud-sun text-blue-400"></i>
+                    <span>Wetter & Vorhersage</span>
+                </h3>
+                <button onclick="closeModal('weather-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="flex space-x-2">
+                <input type="text" id="weather-city-input" onkeydown="if(event.key==='Enter') fetchWeather()" placeholder="Stadt eingeben (z.B. Berlin, Wien, Zürich)" class="flex-1 bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+                <button onclick="fetchWeather()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">Suchen</button>
+            </div>
+            <div id="weather-result" class="bg-nexora-dark/70 border border-nexora-border rounded-xl p-4 text-sm text-gray-300">
+                Gib eine Stadt ein, um aktuelle Wetterdaten, Regenwahrscheinlichkeit und 3-Tage-Vorhersage abzurufen.
+            </div>
+        </div>
+    </div>
+
+    <!-- CALENDAR & TASKS MODAL -->
+    <div id="calendar-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-nexora-card border border-nexora-border w-full max-w-2xl rounded-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-calendar-days text-indigo-400"></i>
+                    <span>Kalender & Aufgaben</span>
+                </h3>
+                <button onclick="closeModal('calendar-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-nexora-dark border border-nexora-border rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <button onclick="changeMonth(-1)" class="text-gray-400 hover:text-white p-1"><i class="fa-solid fa-chevron-left"></i></button>
+                        <span id="calendar-month-year" class="font-semibold text-sm text-white">Monat Jahr</span>
+                        <button onclick="changeMonth(1)" class="text-gray-400 hover:text-white p-1"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 mb-1">
+                        <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                </div>
+
+                <div class="space-y-3 flex flex-col">
+                    <div class="text-xs font-semibold text-indigo-400" id="selected-date-label">Termine & Aufgaben</div>
+                    <div class="flex space-x-2">
+                        <input type="text" id="task-input" onkeydown="if(event.key==='Enter') addTask()" placeholder="Neuer Termin / Aufgabe..." class="flex-1 bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500">
+                        <button onclick="addTask()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-medium transition">Neu</button>
+                    </div>
+                    <div id="task-list" class="space-y-2 flex-1 max-h-52 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LONG-TERM MEMORY MODAL -->
+    <div id="memory-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-nexora-card border border-nexora-border w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-memory text-purple-400"></i>
+                    <span>Langzeitgedächtnis</span>
+                </h3>
+                <button onclick="closeModal('memory-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <p class="text-xs text-gray-400">Gespeicherte Fakten werden bei jeder Anfrage automatisch als persönlicher Kontext an NEXORA übergeben.</p>
+            <div class="flex space-x-2">
+                <input type="text" id="memory-input" onkeydown="if(event.key==='Enter') addMemory()" placeholder="Fakt merken (z.B. Ich wohne in Berlin)..." class="flex-1 bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500">
+                <button onclick="addMemory()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">Merken</button>
+            </div>
+            <div id="memory-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- ADMIN, API SETUP & BACKUP MODAL -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-nexora-card border border-nexora-border w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-emerald-400"></i>
+                    <span>KI-Setup, Test & Datensicherung</span>
+                </h3>
+                <button onclick="closeModal('admin-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Sichere NEXORA-Serververbindung</label>
+                    <div class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-3 text-sm text-emerald-300">Der Gemini-Schlüssel wird sicher auf dem Cloudflare-Server verwaltet. Du musst ihn hier nicht eingeben.</div>
+                    <p class="text-[11px] text-gray-500 mt-1">Der geheime Schlüssel wird nicht in dieser Webseite oder im Browser gespeichert.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Aktuelles Google Gemini Modell (Kostenloser Tarif)</label>
+                    <select id="model-select" class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                        <option value="gemini-3.8-flash">gemini-3.8-flash (Standard)</option>
+                        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (leichte Alternative)</option>
+                    </select>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-medium transition">Speichern</button>
+                    <button onclick="testAPIConnection()" id="test-api-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-medium transition">API-Verbindung testen</button>
+                </div>
+                <div id="api-test-result" class="hidden p-3 rounded-xl text-xs border"></div>
+
+                <div class="border-t border-nexora-border pt-4 space-y-2">
+                    <h4 class="text-xs font-semibold text-gray-300 uppercase tracking-wider">Datensicherung (Chats, Gedächtnis & Kalender)</h4>
+                    <div class="flex space-x-2">
+                        <button onclick="exportBackup()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 py-2 px-3 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Backup exportieren (.json)</span>
+                        </button>
+                        <label class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 py-2 px-3 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Backup wiederherstellen</span>
+                            <input type="file" accept=".json" onchange="importBackup(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN ACCESS GATE -->
+    <div id="admin-login-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[70] p-4">
+        <div class="bg-nexora-card border border-nexora-border w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between"><h3 class="font-bold text-lg text-white">Admin-Zugang</h3><button onclick="closeModal('admin-login-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button></div>
+            <p class="text-xs text-gray-400">Gib deinen Admin-Code ein, um das Control Center zu öffnen.</p>
+            <input id="admin-code-input" type="password" inputmode="numeric" autocomplete="off" placeholder="Admin-Code" class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-3 text-white focus:outline-none focus:border-amber-500" onkeydown="if(event.key==='Enter') verifyAdminCode()">
+            <p id="admin-login-error" class="hidden text-xs text-red-400">Der Code ist nicht korrekt.</p>
+            <button onclick="verifyAdminCode()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-medium">Adminbereich öffnen</button>
+            <p class="text-[10px] text-gray-500">Hinweis: Dieser lokale Code ist nur eine einfache Zugangssperre im Browser, keine sichere Anmeldung für eine öffentliche Website.</p>
+        </div>
+    </div>
+
+    <!-- ADMIN CONTROL CENTER -->
+    <div id="admin-center-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden items-center justify-center z-[65] p-3 md:p-6">
+        <div class="bg-nexora-card border border-amber-500/30 w-full max-w-4xl h-[92vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <header class="px-5 py-4 border-b border-nexora-border flex items-center justify-between bg-black/20">
+                <div><p class="text-[10px] uppercase tracking-[.2em] text-amber-400 font-bold">NEXORA SYSTEM</p><h2 class="text-xl font-bold text-white">Admin Control Center</h2></div>
+                <button onclick="closeAdminCenter()" class="text-gray-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </header>
+            <div class="flex flex-1 min-h-0">
+                <nav class="w-44 md:w-52 border-r border-nexora-border p-3 space-y-2 bg-black/10">
+                    <button onclick="showAdminTab('overview')" class="admin-tab w-full text-left px-3 py-2 rounded-lg text-sm bg-amber-500/15 text-amber-300">Übersicht</button>
+                    <button onclick="showAdminTab('general')" class="admin-tab w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Allgemeine Einstellungen</button>
+                    <button onclick="showAdminTab('update')" class="admin-tab w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Update-System</button>
+                    <button onclick="showAdminTab('security')" class="admin-tab w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Admin-Code</button>
+                </nav>
+                <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+                    <section id="admin-tab-overview" class="admin-panel space-y-4">
+                        <h3 class="text-lg font-semibold text-white">Systemübersicht</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div class="rounded-xl border border-nexora-border bg-nexora-dark p-4"><p class="text-xs text-gray-400">Version</p><p class="text-lg font-bold text-white">NEXORA 5.1</p></div>
+                            <div class="rounded-xl border border-nexora-border bg-nexora-dark p-4"><p class="text-xs text-gray-400">API-Status</p><p id="admin-api-status" class="text-lg font-bold text-white">Wird geprüft</p></div>
+                            <div class="rounded-xl border border-nexora-border bg-nexora-dark p-4"><p class="text-xs text-gray-400">Speicher</p><p class="text-lg font-bold text-white">Lokal im Browser</p></div>
+                        </div>
+                        <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-gray-300">Adminbereich aktiv. Änderungen werden lokal in diesem Browser gespeichert. Für echte Benutzerkonten, geschützte Adminrechte und automatische Server-Updates ist ein Backend erforderlich.</div>
+                    </section>
+                    <section id="admin-tab-general" class="admin-panel hidden space-y-4">
+                        <h3 class="text-lg font-semibold text-white">Allgemeine Einstellungen</h3>
+                        <div><label class="block text-xs text-gray-400 mb-1">Begrüßungstext auf der Startseite</label><textarea id="admin-welcome-input" rows="3" class="w-full bg-nexora-dark border border-nexora-border rounded-xl p-3 text-sm text-white" placeholder="Deine persönliche KI für alles..."></textarea></div>
+                        <label class="flex items-center gap-3 rounded-xl border border-nexora-border p-3"><input id="admin-maintenance-input" type="checkbox" class="accent-amber-500"><span><b class="text-white text-sm">Wartungshinweis anzeigen</b><small class="block text-gray-400">Zeigt einen Hinweis im Adminbereich an. Die App bleibt für dich nutzbar.</small></span></label>
+                        <button onclick="saveAdminGeneralSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm">Einstellungen speichern</button>
+                        <p id="admin-general-status" class="text-xs text-emerald-400"></p>
+                    </section>
+                    <section id="admin-tab-update" class="admin-panel hidden space-y-4">
+                        <h3 class="text-lg font-semibold text-white">NEXORA Update-System</h3>
+                        <p class="text-sm text-gray-400">Wähle eine neue NEXORA-HTML-Datei oder ein ZIP-Updatepaket. Bei ZIP-Dateien wird die enthaltene <b>index.html</b> extrahiert und als Update-Datei heruntergeladen.</p>
+                        <div class="rounded-xl border border-nexora-border bg-nexora-dark p-4 space-y-3">
+                            <input id="admin-update-file" type="file" accept=".html,.htm,.zip,application/zip,text/html" class="block w-full text-sm text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white">
+                            <button onclick="processNexoraUpdate()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm"><i class="fa-solid fa-upload mr-2"></i>Update prüfen und vorbereiten</button>
+                            <p id="admin-update-status" class="text-xs text-gray-300">Noch keine Datei ausgewählt.</p>
+                        </div>
+                        <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs text-amber-200">Wichtig: Der Browser darf die aktuell laufende Datei aus Sicherheitsgründen nicht selbst überschreiben. Nach dem Download musst du die neue index.html im NEXORA-Ordner ersetzen. Erstelle vorher ein Backup deiner Daten.</div>
+                    </section>
+                    <section id="admin-tab-security" class="admin-panel hidden space-y-4">
+                        <h3 class="text-lg font-semibold text-white">Admin-Code ändern</h3>
+                        <div><label class="block text-xs text-gray-400 mb-1">Neuer Admin-Code (mindestens 6 Zeichen)</label><input id="admin-new-code" type="password" autocomplete="new-password" class="w-full max-w-sm bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-white" placeholder="Neuen Code eingeben"></div>
+                        <button onclick="changeAdminCode()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-sm">Admin-Code ändern</button>
+                        <p id="admin-code-status" class="text-xs text-gray-300"></p>
+                        <p class="text-xs text-gray-500">Der Code wird lokal gespeichert und ist nicht als sichere Server-Authentifizierung geeignet.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE MODAL -->
+    <div id="login-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-nexora-card border border-nexora-border w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 mx-auto flex items-center justify-center text-xl">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+            <h3 class="font-bold text-lg text-white">Lokales Benutzerprofil</h3>
+            <p class="text-xs text-gray-400">Dein Name wird für die persönliche Ansprache verwendet.</p>
+            <input type="text" id="username-input" placeholder="Dein Name" class="w-full bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-center">
+            <button onclick="saveUsername()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-medium transition">Speichern</button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        function readStoredArray(key) {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.warn('Gespeicherte Daten konnten nicht gelesen werden:', key, error);
+                return [];
+            }
+        }
+
+        let chats = readStoredArray('nexora_chats_v5');
+        let currentChatId = null;
+        let memories = readStoredArray('nexora_memories_v5');
+        let tasks = readStoredArray('nexora_tasks_v5');
+        const NEXORA_API_URL = 'https://ancient-waterfall-5c99.jeremy-freu.workers.dev';
+        let apiConnected = false;
+        let selectedModel = localStorage.getItem('nexora_model') || 'gemini-3.8-flash';
+        const supportedModels = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+        if (supportedModels.indexOf(selectedModel) === -1) {
+            selectedModel = 'gemini-3.8-flash';
+            localStorage.setItem('nexora_model', selectedModel);
+        }
+        // API-Schlüssel werden ausschließlich als Cloudflare-Secret gespeichert; im Browser liegt keiner.
+
+        let webSearchEnabled = false;
+        let ttsEnabled = false;
+        let isSending = false;
+
+        let attachedFileContent = null;
+        let attachedFileName = null;
+        let attachedImageBase64 = null;
+        let attachedImageMime = null;
+
+        let username = localStorage.getItem('nexora_username') || 'Lokaler Benutzer';
+
+        let calDate = new Date();
+        const todayLocal = new Date();
+        let selectedDateStr = todayLocal.getFullYear() + '-' +
+            String(todayLocal.getMonth() + 1).padStart(2, '0') + '-' +
+            String(todayLocal.getDate()).padStart(2, '0');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('sidebar-username').innerText = username;
+            document.getElementById('username-input').value = username;
+            document.getElementById('model-select').value = selectedModel;
+            document.getElementById('current-model-info').innerText = 'Modell: ' + selectedModel;
+            const savedGreeting = localStorage.getItem('nexora_welcome_text');
+            if (savedGreeting !== null) { const greetingNode = document.getElementById('nexora-welcome-text'); if (greetingNode) greetingNode.textContent = savedGreeting; }
+            updateConnectionBadge();
+
+            renderChatHistory();
+            renderMemories();
+            renderCalendar();
+            renderTasks();
+
+            if (chats.length === 0) {
+                startNewChat();
+            } else {
+                loadChat(chats[0].id);
+            }
+
+            // Prüft die Verbindung zum sicheren NEXORA-Backend.
+            loadPersistentApiSettings();
+        });
+
+        async function loadPersistentApiSettings() {
+            try {
+                const response = await fetch(NEXORA_API_URL + '/health', { cache: 'no-store' });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const status = await response.json();
+                apiConnected = status.ok === true && (status.geminiConfigured === true || status.keyConfigured === true);
+                updateConnectionBadge();
+                const adminStatus = document.getElementById('admin-api-status');
+                if (adminStatus) adminStatus.innerText = apiConnected ? 'Verbunden (Cloudflare)' : 'Backend-Schlüssel fehlt';
+            } catch (err) {
+                apiConnected = false;
+                updateConnectionBadge();
+                console.warn('NEXORA-Backend nicht erreichbar:', err);
+            }
+        }
+
+        function updateConnectionBadge() {
+            const indicator = document.getElementById('status-indicator');
+            if (apiConnected) {
+                indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-400 truncate">NEXORA-API verbunden</span>';
+            } else {
+                indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="text-amber-400 truncate">API nicht erreichbar</span>';
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('flex');
+            el.classList.add('hidden');
+        }
+
+        function startNewChat() {
+            const newChat = {
+                id: 'chat_' + Date.now(),
+                title: 'Neues Gespräch',
+                messages: []
+            };
+            chats.unshift(newChat);
+            saveChats();
+            loadChat(newChat.id);
+            renderChatHistory();
+        }
+
+        function loadChat(id) {
+            currentChatId = id;
+            const chat = chats.find(function(c) { return c.id === id; });
+            if (!chat) return;
+
+            document.getElementById('current-chat-title').innerText = chat.title;
+            const container = document.getElementById('chat-messages');
+
+            if (chat.messages.length === 0) {
+                container.innerHTML =
+                    '<div class="max-w-3xl mx-auto text-center py-10 space-y-4">' +
+                        '<div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 mx-auto flex items-center justify-center glow-effect mb-4">' +
+                            '<span class="font-black text-white text-2xl tracking-tight">N</span>' +
+                        '</div>' +
+                        '<h3 class="text-2xl font-bold text-white">Willkommen bei NEXORA 5.1</h3>' +
+                        '<p id="nexora-welcome-text" class="text-gray-400 max-w-lg mx-auto text-sm">Deine persönliche KI für alles. Stelle komplexe Fragen, analysiere PDF/DOCX/Bilder, recherchiere im Web oder verwalte deinen Kalender.</p>' +
+                        '<div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 text-left">' +
+                            '<div onclick="quickPrompt(&quot;Erkläre mir verständlich, wie ein Quantencomputer funktioniert.&quot;)" class="p-4 rounded-xl bg-nexora-card border border-nexora-border hover:border-blue-500/50 cursor-pointer transition">' +
+                                '<i class="fa-solid fa-atom text-blue-400 mb-2"></i>' +
+                                '<h4 class="font-medium text-white text-sm">Wissen & Erklärungen</h4>' +
+                                '<p class="text-xs text-gray-400 mt-1">Quantencomputer einfach erklärt...</p>' +
+                            '</div>' +
+                            '<div onclick="quickPrompt(&quot;Schreibe eine höfliche E-Mail zur Terminverschiebung auf nächste Woche.&quot;)" class="p-4 rounded-xl bg-nexora-card border border-nexora-border hover:border-blue-500/50 cursor-pointer transition">' +
+                                '<i class="fa-solid fa-envelope text-indigo-400 mb-2"></i>' +
+                                '<h4 class="font-medium text-white text-sm">Texte & E-Mails</h4>' +
+                                '<p class="text-xs text-gray-400 mt-1">Terminverschiebung formulieren...</p>' +
+                            '</div>' +
+                            '<div onclick="quickPrompt(&quot;Schreibe eine moderne HTML- und CSS-Karte für eine Produktübersicht.&quot;)" class="p-4 rounded-xl bg-nexora-card border border-nexora-border hover:border-blue-500/50 cursor-pointer transition">' +
+                                '<i class="fa-solid fa-code text-emerald-400 mb-2"></i>' +
+                                '<h4 class="font-medium text-white text-sm">Programmieren</h4>' +
+                                '<p class="text-xs text-gray-400 mt-1">HTML/CSS Produktkarte...</p>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+            } else {
+                container.innerHTML = '';
+                chat.messages.forEach(function(msg) {
+                    appendMessageUI(msg.role, msg.content, false);
+                });
+            }
+            const savedGreeting = localStorage.getItem('nexora_welcome_text');
+            const welcomeNode = document.getElementById('nexora-welcome-text');
+            if (savedGreeting !== null && welcomeNode) welcomeNode.textContent = savedGreeting;
+            container.scrollTop = container.scrollHeight;
+            renderChatHistory();
+        }
+
+        function renderChatHistory() {
+            const list = document.getElementById('chat-history-list');
+            document.getElementById('chat-count').innerText = chats.length;
+            list.innerHTML = '';
+
+            chats.forEach(function(chat) {
+                const active = chat.id === currentChatId;
+                const div = document.createElement('div');
+                div.className = 'group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition ' +
+                    (active ? 'bg-blue-600/15 text-blue-400 font-medium border border-blue-500/30' : 'text-gray-400 hover:bg-gray-800/70 hover:text-white');
+
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'flex items-center space-x-2 truncate flex-1';
+                titleDiv.onclick = function() { loadChat(chat.id); };
+                titleDiv.innerHTML = '<i class="fa-regular fa-message text-xs flex-shrink-0"></i><span class="truncate">' + escapeHTML(chat.title) + '</span>';
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1 transition';
+                delBtn.innerHTML = '<i class="fa-solid fa-trash text-xs"></i>';
+                delBtn.onclick = function(e) { deleteChat(e, chat.id); };
+
+                div.appendChild(titleDiv);
+                div.appendChild(delBtn);
+                list.appendChild(div);
+            });
+        }
+
+        function deleteChat(e, id) {
+            e.stopPropagation();
+            chats = chats.filter(function(c) { return c.id !== id; });
+            saveChats();
+            if (chats.length === 0) {
+                startNewChat();
+            } else if (currentChatId === id) {
+                loadChat(chats[0].id);
+            } else {
+                renderChatHistory();
+            }
+        }
+
+        function clearCurrentChat() {
+            const chat = chats.find(function(c) { return c.id === currentChatId; });
+            if (chat) {
+                chat.messages = [];
+                saveChats();
+                loadChat(currentChatId);
+            }
+        }
+
+        function saveChats() {
+            localStorage.setItem('nexora_chats_v5', JSON.stringify(chats));
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+            document.getElementById('token-counter').innerText = textarea.value.length + ' Zeichen';
+        }
+
+        function quickPrompt(text) {
+            document.getElementById('user-input').value = text;
+            sendMessage();
+        }
+
+        async function fetchLiveWebContext(query) {
+            let results = [];
+            try {
+                const wikiSearchUrl = 'https://de.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&format=json&origin=*&srlimit=2';
+                const wikiRes = await fetch(wikiSearchUrl);
+                if (wikiRes.ok) {
+                    const wikiData = await wikiRes.json();
+                    if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
+                        wikiData.query.search.forEach(function(item) {
+                            const cleanSnippet = item.snippet.replace(/<[^>]*>?/gm, '');
+                            results.push('Wikipedia (' + item.title + '): ' + cleanSnippet);
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn('Wikipedia nicht erreichbar:', e);
+            }
+
+            try {
+                const ddgUrl = 'https://api.duckduckgo.com/?q=' + encodeURIComponent(query) + '&format=json&no_html=1&skip_disambig=1';
+                const ddgRes = await fetch(ddgUrl);
+                if (ddgRes.ok) {
+                    const ddgData = await ddgRes.json();
+                    if (ddgData.AbstractText) {
+                        results.push('Web-Info (' + (ddgData.Heading || 'DuckDuckGo') + '): ' + ddgData.AbstractText);
+                    }
+                }
+            } catch (e) {
+                console.warn('DuckDuckGo nicht erreichbar:', e);
+            }
+
+            return results.join('\n');
+        }
+
+        // NEXORA Wetterdienst: Open-Meteo (kostenlos, ohne zusätzlichen API-Schlüssel)
+        function isWeatherQuestion(text) {
+            return /\b(wetter|regen|regnet|regnen|regnete|regnerisch|regenwahrscheinlichkeit|temperatur|temperaturen|grad\s+celsius|wettervorhersage|vorhersage.*wetter|schneit|schnee|gewitter|sonnenaufgang|sonnenuntergang)\b/i.test(text || '');
+        }
+
+        function weatherCodeText(code) {
+            const map = {
+                0:'klarer Himmel',1:'überwiegend klar',2:'teils bewölkt',3:'bedeckt',
+                45:'Nebelig',48:'Nebel mit Reif',51:'leichter Sprühregen',53:'mäßiger Sprühregen',55:'starker Sprühregen',
+                56:'gefrierender leichter Sprühregen',57:'gefrierender Sprühregen',61:'leichter Regen',63:'mäßiger Regen',65:'starker Regen',
+                66:'gefrierender leichter Regen',67:'gefrierender starker Regen',71:'leichter Schneefall',73:'mäßiger Schneefall',75:'starker Schneefall',
+                77:'Schneegriesel',80:'leichte Regenschauer',81:'mäßige Regenschauer',82:'starke Regenschauer',
+                85:'leichte Schneeschauer',86:'starke Schneeschauer',95:'Gewitter',96:'Gewitter mit leichtem Hagel',99:'Gewitter mit starkem Hagel'
+            };
+            return map[code] || 'wechselhaft';
+        }
+
+        function extractWeatherPlace(text) {
+            const t = (text || '').trim();
+            if (/\b(bei mir|hier|mein(?:em)? standort|aktueller standort|wo ich bin|meiner nähe)\b/i.test(t)) return null;
+            const m = t.match(/\b(?:in|für|bei|nach)\s+([\p{L}][\p{L} .'-]{1,45}?)(?=\s+(?:heute|morgen|übermorgen|am\s|für\s|und\s|bitte\b|regnet\b|regnen\b|regen\b|wetter\b|temperatur\b|wie\b|wann\b|wird\b|soll\b|ist\b)|[?!,.]|$)/iu);
+            if (m) return m[1].trim();
+            return null;
+        }
+
+        function getBrowserCoordinates() {
+            return new Promise(function(resolve, reject) {
+                if (!navigator.geolocation) return reject(new Error('Standortbestimmung wird von diesem Browser nicht unterstützt.'));
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) { resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, label: 'Dein aktueller Standort' }); },
+                    function() { reject(new Error('Ich darf deinen Standort nicht abrufen. Nenne mir bitte eine Stadt, zum Beispiel „Wetter in Berlin“.')); },
+                    { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+                );
+            });
+        }
+
+        async function geocodeWeatherPlace(place) {
+            const url = 'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(place) + '&count=1&language=de&format=json';
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Der Wetter-Ortsdienst ist gerade nicht erreichbar.');
+            const data = await response.json();
+            if (!data.results || !data.results.length) throw new Error('Ich finde den Ort „' + place + '“ nicht. Bitte prüfe die Schreibweise oder nenne eine nahegelegene Stadt.');
+            const p = data.results[0];
+            return { latitude: p.latitude, longitude: p.longitude, label: [p.name, p.admin1, p.country].filter(Boolean).join(', ') };
+        }
+
+        async function fetchWeatherAnswer(question) {
+            const place = extractWeatherPlace(question);
+            const location = place ? await geocodeWeatherPlace(place) : await getBrowserCoordinates();
+            const params = new URLSearchParams({
+                latitude: String(location.latitude), longitude: String(location.longitude),
+                current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,wind_speed_10m',
+                hourly: 'temperature_2m,precipitation_probability,precipitation,rain,showers,weather_code',
+                daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset',
+                forecast_days: '3', timezone: 'auto'
+            });
+            const response = await fetch('https://api.open-meteo.com/v1/forecast?' + params.toString());
+            if (!response.ok) throw new Error('Die aktuellen Wetterdaten konnten nicht geladen werden. Bitte versuche es gleich noch einmal.');
+            const data = await response.json();
+            if (!data.current || !data.daily) throw new Error('Der Wetterdienst hat unvollständige Daten geliefert.');
+            const fmtDay = function(iso) { return new Date(iso + 'T12:00:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit' }); };
+            const current = data.current;
+            let out = '## Wetter für ' + location.label + '\n';
+            out += '**Jetzt:** ' + weatherCodeText(current.weather_code) + ', **' + Math.round(current.temperature_2m) + ' °C** (gefühlt ' + Math.round(current.apparent_temperature) + ' °C).\n';
+            out += 'Luftfeuchtigkeit: ' + Math.round(current.relative_humidity_2m) + ' %, Wind: ' + Math.round(current.wind_speed_10m) + ' km/h.\n';
+            if (current.precipitation > 0 || current.rain > 0 || current.showers > 0) out += 'Aktuell fällt Niederschlag (' + Number(current.precipitation || 0).toLocaleString('de-DE') + ' mm).\n';
+            else out += 'Aktuell wird kein Niederschlag gemeldet.\n';
+            out += '\n### Regen in den nächsten Stunden\n';
+            const now = new Date();
+            const times = data.hourly.time || [];
+            let rainRows = [];
+            for (let i=0; i<times.length && rainRows.length<12; i++) {
+                const dt = new Date(times[i]);
+                if (dt >= now) {
+                    const prob = data.hourly.precipitation_probability?.[i] ?? 0;
+                    const mm = data.hourly.precipitation?.[i] ?? 0;
+                    if (prob >= 20 || mm > 0) rainRows.push({ time:dt, prob:prob, mm:mm });
+                }
+            }
+            if (rainRows.length) {
+                rainRows.slice(0,6).forEach(function(r) { out += '- ' + r.time.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'}) + ' Uhr: Regenwahrscheinlichkeit ' + Math.round(r.prob) + ' %, Niederschlag etwa ' + Number(r.mm).toLocaleString('de-DE') + ' mm\n'; });
+            } else out += 'In den nächsten Stunden wird laut Vorhersage kaum Regen erwartet.\n';
+            out += '\n### Die nächsten 3 Tage\n';
+            for (let i=0; i<data.daily.time.length; i++) {
+                const d = data.daily;
+                out += '- **' + fmtDay(d.time[i]) + ':** ' + weatherCodeText(d.weather_code[i]) + ', ' + Math.round(d.temperature_2m_min[i]) + ' bis ' + Math.round(d.temperature_2m_max[i]) + ' °C, Regenwahrscheinlichkeit bis ' + Math.round(d.precipitation_probability_max[i] || 0) + ' %, Niederschlag etwa ' + Number(d.precipitation_sum[i] || 0).toLocaleString('de-DE') + ' mm.\n';
+            }
+            out += '\n*Quelle: Open-Meteo. Vorhersagen können sich ändern.*';
+            return out;
+        }
+
+        // NEXORA Bildgenerierung: kostenlos über AI Horde (Community-Worker, anonyme Nutzung).
+        // Anonyme Anfragen sind kostenlos, können bei hoher Auslastung aber länger warten.
+        function isImageCreationRequest(text) {
+            return /\b(erstelle|erstell|generiere|zeichne|male|mach|kreiere|erzeuge)\b[\s\S]{0,100}\b(bild|foto|fotografie|zeichnung|illustration|kunstwerk|grafik)\b/i.test(text || '') ||
+                   /^\s*(bild|foto|zeichnung|illustration)\s+(von|mit|:)/i.test(text || '');
+        }
+
+        function extractImagePrompt(text) {
+            return (text || '').trim()
+                .replace(/^\s*(bitte\s+)?(erstelle|erstell|generiere|zeichne|male|mach|kreiere|erzeuge)\s+(mir\s+)?(ein\s+)?(bild|foto|fotografie|zeichnung|illustration|kunstwerk|grafik)?\s*(von|mit|:)?\s*/i, '')
+                .replace(/^\s*(ein\s+)?(bild|foto|zeichnung|illustration)\s+(von|mit)\s+/i, '')
+                .trim();
+        }
+
+        async function generateImageFree(prompt) {
+            const cleanPrompt = String(prompt || '').trim();
+            if (!cleanPrompt) throw new Error('Bitte beschreibe, welches Bild ich erstellen soll.');
+
+            // Primär: Cloudflare Workers AI / FLUX. Der Schlüssel bleibt im Worker.
+            let fluxError = null;
+            try {
+                const fluxResponse = await fetch(NEXORA_API_URL + '/api/image/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    cache: 'no-store',
+                    body: JSON.stringify({ prompt: cleanPrompt })
+                });
+                const fluxData = await fluxResponse.json().catch(function() { return {}; });
+                if (fluxResponse.ok && fluxData.ok && fluxData.image) {
+                    const imageData = String(fluxData.image).startsWith('data:')
+                        ? fluxData.image
+                        : 'data:image/jpeg;base64,' + fluxData.image;
+                    return '## Dein NEXORA-Bild ist fertig!\n\n![Von NEXORA erstelltes Bild](' + imageData + ')\n\n[Bild öffnen / speichern](' + imageData + ')\n\n*Erstellt mit FLUX über Cloudflare Workers AI.*';
+                }
+                fluxError = new Error(fluxData.error && fluxData.error.message ? fluxData.error.message : 'FLUX konnte das Bild nicht erstellen.');
+            } catch (error) {
+                fluxError = error;
+            }
+
+            // Ersatz: AI Horde über den Worker, damit HORDE_API_KEY nicht im Browser liegt.
+            try {
+                const submitResponse = await fetch(NEXORA_API_URL + '/api/image/async', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    cache: 'no-store',
+                    body: JSON.stringify({ prompt: cleanPrompt })
+                });
+                const submitted = await submitResponse.json().catch(function() { return {}; });
+                if (!submitResponse.ok || !submitted.ok || !submitted.id) {
+                    throw new Error(submitted.error && submitted.error.message ? submitted.error.message : 'AI Horde konnte den Auftrag nicht annehmen.');
+                }
+
+                const started = Date.now();
+                while (Date.now() - started < 360000) {
+                    await new Promise(function(resolve) { setTimeout(resolve, 4000); });
+                    const checkResponse = await fetch(NEXORA_API_URL + '/api/image/check/' + encodeURIComponent(submitted.id), { cache: 'no-store' });
+                    const check = await checkResponse.json().catch(function() { return {}; });
+                    if (!checkResponse.ok || !check.ok) throw new Error(check.error && check.error.message ? check.error.message : 'AI-Horde-Status konnte nicht abgefragt werden.');
+                    if (check.done) {
+                        const statusResponse = await fetch(NEXORA_API_URL + '/api/image/status/' + encodeURIComponent(submitted.id), { cache: 'no-store' });
+                        const status = await statusResponse.json().catch(function() { return {}; });
+                        const generation = status.generations && status.generations[0];
+                        if (!statusResponse.ok || !status.ok || !generation || !generation.img) throw new Error('AI Horde hat kein fertiges Bild geliefert.');
+                        const imageUrl = generation.img;
+                        return '## Dein NEXORA-Bild ist fertig!\n\n![Von NEXORA erstelltes Bild](' + imageUrl + ')\n\n[Bild öffnen / speichern](' + imageUrl + ')\n\n*Erstellt mit AI Horde als Ersatzdienst.*';
+                    }
+                }
+                throw new Error('Die Bildgenerierung dauert zu lange.');
+            } catch (hordeError) {
+                throw new Error('FLUX und AI Horde konnten kein Bild erstellen. FLUX: ' + (fluxError ? fluxError.message : 'Fehler') + ' | AI Horde: ' + hordeError.message);
+            }
+        }
+
+
+        // Bildersuche ist getrennt von der Bildgenerierung und nutzt die öffentliche
+        // Wikimedia-Commons-API (keine Google-Scraper und kein zusätzlicher API-Schlüssel).
+        function isImageSearchRequest(text) {
+            return /\b(zeig|zeige|such|suche|finde|find)\b[\s\S]{0,100}\b(bilder|bild|fotos|fotos|aufnahmen|images|photos)\b/i.test(text || '') ||
+                   /^\s*(bilder|fotos|aufnahmen)\s+(von|zu|über)\b/i.test(text || '');
+        }
+
+        function extractImageSearchQuery(text) {
+            return (text || '')
+                .replace(/^\s*(bitte\s+)?(zeig|zeige|such|suche|finde|find)\s+(mir\s+)?(einige\s+|ein paar\s+)?(bilder|bild|fotos|aufnahmen|images|photos)\s+(von|vom|zu|über|aus|der|die|dem|des)\s+/i, '')
+                .replace(/^\s*(bilder|fotos|aufnahmen)\s+(von|vom|zu|über|aus|der|die|dem|des)\s+/i, '')
+                .replace(/[?!.,]+$/g, '')
+                .trim();
+        }
+
+        function escapeMarkdownText(value) {
+            return String(value || '').replace(/([\\`*_{}\[\]()#+.!|>~-])/g, '\\$1');
+        }
+
+        async function searchImagesFree(query) {
+            const cleanQuery = (query || '').trim();
+            if (!cleanQuery) throw new Error('Bitte nenne ein Motiv für die Bildersuche.');
+
+            // Mehrere Suchvarianten probieren: keine starre filetype:-Abfrage,
+            // die bei vielen Begriffen die Commons-Suche unnötig einschränkt.
+            const variants = [];
+            const addVariant = function(value) {
+                value = String(value || '').trim();
+                if (value && !variants.includes(value)) variants.push(value);
+            };
+            addVariant(cleanQuery);
+            addVariant(cleanQuery.replace(/^(der|die|das|ein|eine|the|a|an)\\s+/i, ''));
+            const words = cleanQuery.split(/\\s+/).filter(Boolean);
+            if (words.length > 2) addVariant(words.slice(0, 3).join(' '));
+            if (words.length > 1) addVariant(words.slice(0, 2).join(' '));
+
+            let items = [];
+            let lastError = null;
+            for (const term of variants) {
+                const params = new URLSearchParams({
+                    action: 'query',
+                    generator: 'search',
+                    gsrsearch: term,
+                    gsrnamespace: '6',
+                    gsrlimit: '10',
+                    prop: 'imageinfo',
+                    iiprop: 'url|extmetadata',
+                    iiurlwidth: '640',
+                    format: 'json',
+                    origin: '*'
+                });
+                try {
+                    const response = await fetch('https://commons.wikimedia.org/w/api.php?' + params.toString(), {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!response.ok) throw new Error('Wikimedia Commons antwortet mit HTTP ' + response.status + '.');
+                    const data = await response.json();
+                    const pages = data && data.query && data.query.pages ? Object.values(data.query.pages) : [];
+                    items = pages.map(function(page) {
+                        const info = page.imageinfo && page.imageinfo[0];
+                        if (!info || !info.thumburl || !info.descriptionurl) return null;
+                        const title = String(page.title || 'Bild').replace(/^File:/, '');
+                        return {
+                            title: title,
+                            image: info.thumburl,
+                            source: info.descriptionurl,
+                            license: info.extmetadata && info.extmetadata.LicenseShortName
+                                ? String(info.extmetadata.LicenseShortName.value || '').replace(/<[^>]*>/g, '')
+                                : ''
+                        };
+                    }).filter(Boolean);
+                    if (items.length) break;
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            if (!items.length) {
+                if (lastError) throw new Error('Die Bildersuche ist momentan nicht erreichbar. ' + lastError.message + ' Bitte versuche es später erneut.');
+                return 'Ich habe auf Wikimedia Commons auch mit vereinfachten Suchbegriffen keine passenden Bilder gefunden. Versuche einen allgemeineren Begriff, zum Beispiel „Eiffelturm Paris“ statt eines ganzen Satzes.';
+            }
+            let output = '## Gefundene Bilder: ' + cleanQuery + '\n\n';
+            items.forEach(function(item, index) {
+                output += '![' + escapeMarkdownText(item.title) + '](' + item.image + ')\n\n';
+                output += '**' + (index + 1) + '. ' + escapeMarkdownText(item.title) + '**  \n';
+                output += '[Originalseite und Lizenzinformationen](' + item.source + ')';
+                if (item.license) output += ' · Lizenz: ' + escapeMarkdownText(item.license);
+                output += '\n\n';
+            });
+            output += '*Bildersuche über Wikimedia Commons. Bitte prüfe die Lizenzbedingungen auf der jeweiligen Originalseite, bevor du ein Bild weiterverwendest.*';
+            return output;
+        }
+
+        async function sendMessage() {
+            if (isSending) return;
+
+            const input = document.getElementById('user-input');
+            const rawText = input.value.trim();
+            if (!rawText && !attachedFileContent && !attachedImageBase64) return;
+
+            isSending = true;
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+
+            let userDisplayMessage = rawText;
+            let promptForAI = rawText;
+
+            if (attachedFileContent) {
+                userDisplayMessage = '📎 **Datei:** ' + attachedFileName + (rawText ? '\n\n' + rawText : '');
+                promptForAI = '[Inhalt der hochgeladenen Datei "' + attachedFileName + '"]:\n' + attachedFileContent.substring(0, 25000) + '\n\nAufgabe/Frage dazu: ' + (rawText || 'Bitte fasse diese Datei zusammen und erkläre die wichtigsten Punkte.');
+            } else if (attachedImageBase64) {
+                userDisplayMessage = '🖼️ **Bild:** ' + attachedFileName + (rawText ? '\n\n' + rawText : '');
+                promptForAI = rawText || 'Beschreibe und analysiere dieses Bild detailliert.';
+            }
+
+            const currentImageBase64 = attachedImageBase64;
+            const currentImageMime = attachedImageMime;
+            removeAttachment();
+
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('token-counter').innerText = '0 Zeichen';
+
+            const chat = chats.find(function(c) { return c.id === currentChatId; });
+            if (chat && chat.messages.length === 0) {
+                document.getElementById('chat-messages').innerHTML = '';
+                const cleanTitle = rawText || attachedFileName || 'Neues Gespräch';
+                chat.title = cleanTitle.length > 28 ? cleanTitle.substring(0, 28) + '...' : cleanTitle;
+                document.getElementById('current-chat-title').innerText = chat.title;
+            }
+
+            appendMessageUI('user', userDisplayMessage, true);
+
+            const loadingId = 'loading_' + Date.now();
+            appendLoadingUI(loadingId);
+
+            try {
+                let responseText = '';
+                if (!currentImageBase64 && isImageCreationRequest(rawText)) {
+                    // Bildwünsche werden direkt an den Bildgenerator geschickt, nicht an Websuche oder Text-KI.
+                    const imagePrompt = extractImagePrompt(rawText);
+                    responseText = await generateImageFree(imagePrompt);
+                } else if (!currentImageBase64 && isImageSearchRequest(rawText)) {
+                    // Gefundene Bilder stammen aus Wikimedia Commons; dies ist keine Bildgenerierung.
+                    responseText = await searchImagesFree(extractImageSearchQuery(rawText));
+                } else if (isWeatherQuestion(rawText)) {
+                    // Wetterabfragen nutzen echte Live-Wetterdaten und benötigen keinen KI-API-Schlüssel.
+                    responseText = await fetchWeatherAnswer(rawText);
+                } else {
+                    let webContext = '';
+                    if (webSearchEnabled && rawText) {
+                        webContext = await fetchLiveWebContext(rawText);
+                    }
+                    responseText = await callGeminiAPI(promptForAI, webContext, currentImageBase64, currentImageMime);
+                }
+
+                removeLoadingUI(loadingId);
+                appendMessageUI('assistant', responseText, true);
+
+                if (ttsEnabled) {
+                    speakText(responseText);
+                }
+            } catch (error) {
+                removeLoadingUI(loadingId);
+                appendMessageUI('assistant', '❌ **Fehler bei der KI-Anfrage:** ' + error.message, true);
+            } finally {
+                isSending = false;
+                sendBtn.disabled = false;
+            }
+        }
+
+        async function callGeminiAPI(prompt, webContext, imageBase64, imageMime) {
+            let systemParts = [
+                'Du bist NEXORA 5.4, ein freundlicher, hilfsbereiter und präziser persönlicher KI-Assistent.',
+                'Antworte natürlich, klar und strukturiert auf Deutsch.',
+                'Aktuelles Datum: ' + new Date().toLocaleDateString('de-DE') + '.',
+                'Nutzername: ' + username + '.'
+            ];
+
+            if (memories.length > 0) {
+                systemParts.push('Gespeicherte Informationen über den Nutzer (Langzeitgedächtnis):\n' + memories.map(function(m) { return '- ' + m; }).join('\n'));
+            }
+            if (webContext) {
+                systemParts.push('Aktuelle Live-Suchergebnisse aus dem Internet zu dieser Anfrage:\n' + webContext + '\nNutze diese Informationen, um aktuell und faktenbasiert zu antworten.');
+            }
+
+            const chat = chats.find(function(c) { return c.id === currentChatId; });
+            let contents = [];
+            if (chat && chat.messages.length > 1) {
+                chat.messages.slice(0, -1).slice(-8).forEach(function(m) {
+                    contents.push({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] });
+                });
+            }
+
+            const userParts = [{ text: prompt }];
+            if (imageBase64 && imageMime) {
+                userParts.push({ inline_data: { mime_type: imageMime, data: imageBase64 } });
+            }
+            contents.push({ role: 'user', parts: userParts });
+
+            const response = await fetch(NEXORA_API_URL + '/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store',
+                body: JSON.stringify({ contents: contents, systemInstruction: systemParts.join('\n\n') })
+            });
+            const data = await response.json().catch(function() { return {}; });
+            if (!response.ok || data.ok === false) {
+                const message = data.error && data.error.message ? data.error.message : 'HTTP-Fehler ' + response.status;
+                if (response.status === 429) throw new Error('Das Nutzungslimit ist kurzzeitig erreicht. Bitte warte einen Moment. ' + message);
+                throw new Error(message);
+            }
+            if (typeof data.text === 'string' && data.text.trim()) return data.text;
+            // Compatibility with an upstream Gemini-compatible response.
+            const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+            const textParts = Array.isArray(parts) ? parts.filter(function(part) { return typeof part.text === 'string'; }) : [];
+            if (textParts.length) return textParts.map(function(part) { return part.text; }).join('\n');
+            throw new Error('NEXORA hat keine gültige Textantwort erhalten.');
+        }
+
+        function appendMessageUI(role, content, save) {
+            const container = document.getElementById('chat-messages');
+            const isUser = role === 'user';
+
+            const div = document.createElement('div');
+            div.className = 'flex space-x-3 max-w-4xl mx-auto ' + (isUser ? 'justify-end' : '');
+
+            let renderedHTML = '';
+            if (isUser) {
+                renderedHTML = escapeHTML(content).replace(/\n/g, '<br>');
+            } else {
+                const rawParsed = marked.parse(content);
+                renderedHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(rawParsed) : escapeHTML(content).replace(/\n/g, '<br>');
+            }
+
+            const avatarAI = '<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center flex-shrink-0 text-white text-xs mt-1"><span class="font-black tracking-tight">N</span></div>';
+            const avatarUser = '<div class="w-8 h-8 rounded-full bg-blue-950 border border-blue-800 flex items-center justify-center flex-shrink-0 text-xs font-semibold text-blue-300 mt-1"><i class="fa-solid fa-user"></i></div>';
+
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'space-y-1 ' + (isUser ? 'max-w-xl' : 'flex-1 min-w-0');
+
+            const innerBubble = document.createElement('div');
+            innerBubble.className = 'p-4 rounded-2xl text-sm leading-relaxed prose prose-invert max-w-none ' +
+                (isUser ? 'bg-blue-600 text-white rounded-br-none shadow-md shadow-blue-600/15' : 'bg-nexora-card border border-nexora-border text-gray-200 rounded-bl-none');
+            innerBubble.innerHTML = renderedHTML;
+            bubbleDiv.appendChild(innerBubble);
+
+            if (!isUser) {
+                const actionRow = document.createElement('div');
+                actionRow.className = 'flex items-center space-x-3 px-1 text-xs text-gray-500';
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'hover:text-gray-300 transition flex items-center space-x-1';
+                copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i><span>Kopieren</span>';
+                copyBtn.onclick = function() {
+                    navigator.clipboard.writeText(content);
+                    copyBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i><span class="text-emerald-400">Kopiert</span>';
+                    setTimeout(function() {
+                        copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i><span>Kopieren</span>';
+                    }, 2000);
+                };
+
+                const speakBtn = document.createElement('button');
+                speakBtn.className = 'hover:text-gray-300 transition flex items-center space-x-1';
+                speakBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i><span>Vorlesen</span>';
+                speakBtn.onclick = function() { speakText(content); };
+
+                actionRow.appendChild(copyBtn);
+                actionRow.appendChild(speakBtn);
+                bubbleDiv.appendChild(actionRow);
+            }
+
+            if (!isUser) div.insertAdjacentHTML('beforeend', avatarAI);
+            div.appendChild(bubbleDiv);
+            if (isUser) div.insertAdjacentHTML('beforeend', avatarUser);
+
+            container.appendChild(div);
+            const savedGreeting = localStorage.getItem('nexora_welcome_text');
+            const welcomeNode = document.getElementById('nexora-welcome-text');
+            if (savedGreeting !== null && welcomeNode) welcomeNode.textContent = savedGreeting;
+            container.scrollTop = container.scrollHeight;
+
+            if (save) {
+                const chat = chats.find(function(c) { return c.id === currentChatId; });
+                if (chat) {
+                    chat.messages.push({ role: role, content: content });
+                    saveChats();
+                    renderChatHistory();
+                }
+            }
+        }
+
+        function appendLoadingUI(id) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex space-x-3 max-w-4xl mx-auto';
+            div.innerHTML =
+                '<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-black">N</div>' +
+                '<div class="p-4 rounded-2xl bg-nexora-card border border-nexora-border text-gray-400 text-sm flex items-center space-x-2.5">' +
+                    '<i class="fa-solid fa-circle-notch fa-spin text-blue-400"></i>' +
+                    '<span>NEXORA analysiert und antwortet...</span>' +
+                '</div>';
+            container.appendChild(div);
+            const savedGreeting = localStorage.getItem('nexora_welcome_text');
+            const welcomeNode = document.getElementById('nexora-welcome-text');
+            if (savedGreeting !== null && welcomeNode) welcomeNode.textContent = savedGreeting;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeLoadingUI(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, function(tag) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag);
+            });
+        }
+
+        async function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Die Datei ist größer als 10 MB.');
+                return;
+            }
+
+            removeAttachment();
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            try {
+                if (['png', 'jpg', 'jpeg', 'webp'].indexOf(ext) !== -1) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        const dataUrl = evt.target.result;
+                        attachedImageBase64 = dataUrl.split(',')[1];
+                        attachedImageMime = file.type;
+                        attachedFileName = file.name;
+                        showAttachmentBadge('Bild: ' + file.name);
+                    };
+                    reader.readAsDataURL(file);
+                } else if (ext === 'pdf') {
+                    if (typeof pdfjsLib === 'undefined') {
+                        alert('PDF-Bibliothek nicht geladen.');
+                        return;
+                    }
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    let fullText = '';
+                    for (let i = 1; i <= Math.min(pdf.numPages, 25); i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        fullText += textContent.items.map(function(item) { return item.str; }).join(' ') + '\n';
+                    }
+                    attachedFileContent = fullText;
+                    attachedFileName = file.name;
+                    showAttachmentBadge('PDF: ' + file.name + ' (' + pdf.numPages + ' Seiten)');
+                } else if (ext === 'docx') {
+                    if (typeof mammoth === 'undefined') {
+                        alert('DOCX-Bibliothek nicht geladen.');
+                        return;
+                    }
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    attachedFileContent = result.value;
+                    attachedFileName = file.name;
+                    showAttachmentBadge('DOCX: ' + file.name);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        attachedFileContent = evt.target.result;
+                        attachedFileName = file.name;
+                        showAttachmentBadge(file.name);
+                    };
+                    reader.readAsText(file);
+                }
+            } catch (err) {
+                alert('Fehler beim Lesen der Datei: ' + err.message);
+            }
+        }
+
+        function showAttachmentBadge(label) {
+            document.getElementById('attached-filename').innerText = label;
+            document.getElementById('file-attachment-preview').classList.remove('hidden');
+        }
+
+        function removeAttachment() {
+            attachedFileContent = null;
+            attachedFileName = null;
+            attachedImageBase64 = null;
+            attachedImageMime = null;
+            document.getElementById('file-attachment-preview').classList.add('hidden');
+            document.getElementById('file-upload-input').value = '';
+        }
+
+        let recognition = null;
+        function toggleVoiceInput() {
+            const orb = document.getElementById('nexora-voice-orb');
+            const voiceBtn = document.getElementById('voice-btn');
+            if (recognition) {
+                try { recognition.stop(); } catch (e) {}
+                recognition = null;
+                if (orb) orb.classList.remove('listening');
+                if (voiceBtn) voiceBtn.classList.remove('text-red-500');
+                updateNexoraOrbLabel('Sprachkugel');
+                return;
+            }
+            const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognitionAPI) {
+                alert('Dein Browser unterstützt die Spracheingabe nicht. Bitte öffne NEXORA mit der aktuellen Version von Chrome oder Edge und erlaube den Mikrofonzugriff.');
+                updateNexoraOrbLabel('Mikrofon nicht unterstützt');
+                return;
+            }
+            try {
+                recognition = new SpeechRecognitionAPI();
+                recognition.lang = 'de-DE';
+                recognition.interimResults = false;
+                recognition.continuous = false;
+                recognition.onstart = function() {
+                    if (orb) orb.classList.add('listening');
+                    if (voiceBtn) voiceBtn.classList.add('text-red-500');
+                    updateNexoraOrbLabel('Ich höre zu …');
+                };
+                recognition.onresult = function(event) {
+                    const input = document.getElementById('user-input');
+                    const transcript = event.results && event.results[0] && event.results[0][0] ? event.results[0][0].transcript : '';
+                    if (transcript) {
+                        input.value = (input.value ? input.value + ' ' : '') + transcript;
+                        autoResize(input);
+                        input.focus();
+                        updateNexoraOrbLabel('Erkannt – jetzt senden');
+                    }
+                };
+                recognition.onerror = function(event) {
+                    updateNexoraOrbLabel(event && event.error === 'not-allowed' ? 'Mikrofon erlauben' : 'Spracheingabe fehlgeschlagen');
+                };
+                recognition.onend = function() {
+                    recognition = null;
+                    if (orb) orb.classList.remove('listening');
+                    if (voiceBtn) voiceBtn.classList.remove('text-red-500');
+                    setTimeout(function(){ updateNexoraOrbLabel('Sprachkugel'); }, 2500);
+                };
+                recognition.start();
+            } catch (err) {
+                recognition = null;
+                if (orb) orb.classList.remove('listening');
+                updateNexoraOrbLabel('Mikrofon konnte nicht starten');
+            }
+        }
+
+        function updateNexoraOrbLabel(message) {
+            const label = document.getElementById('nexora-voice-orb-label');
+            if (label) label.textContent = message;
+        }
+
+        function toggleTTS() {
+            ttsEnabled = !ttsEnabled;
+            const btn = document.getElementById('tts-toggle');
+            const icon = document.getElementById('tts-icon');
+            const label = document.getElementById('tts-label');
+            if (ttsEnabled) {
+                btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium border border-purple-500 bg-purple-500/15 text-purple-300 transition flex items-center space-x-1.5';
+                icon.className = 'fa-solid fa-volume-high';
+                label.innerText = 'Vorlesen: An';
+            } else {
+                btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-700 text-gray-400 hover:border-purple-500 hover:text-purple-400 transition flex items-center space-x-1.5';
+                icon.className = 'fa-solid fa-volume-xmark';
+                label.innerText = 'Vorlesen: Aus';
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }
+        }
+
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const cleanText = text.replace(/[#*`_~]/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'de-DE';
+
+            const voices = window.speechSynthesis.getVoices();
+            const femaleGermanVoice = voices.find(function(v) {
+                return v.lang.indexOf('de') !== -1 && (v.name.indexOf('Katja') !== -1 || v.name.indexOf('Hedda') !== -1 || v.name.indexOf('Anna') !== -1 || v.name.indexOf('Google Deutsch') !== -1 || v.name.toLowerCase().indexOf('female') !== -1);
+            }) || voices.find(function(v) { return v.lang.indexOf('de') !== -1; });
+
+            if (femaleGermanVoice) utterance.voice = femaleGermanVoice;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        async function fetchWeather() {
+            const city = document.getElementById('weather-city-input').value.trim();
+            const resultDiv = document.getElementById('weather-result');
+            if (!city) return;
+
+            resultDiv.innerHTML = '<div class="flex items-center space-x-2 text-blue-400"><i class="fa-solid fa-circle-notch fa-spin"></i><span>Lade Wetterdaten...</span></div>';
+            try {
+                const geoRes = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(city) + '&count=1&language=de&format=json');
+                const geoData = await geoRes.json();
+                if (!geoData.results || geoData.results.length === 0) {
+                    resultDiv.innerHTML = '<span class="text-amber-400">Ort "' + escapeHTML(city) + '" nicht gefunden.</span>';
+                    return;
+                }
+                const loc = geoData.results[0];
+
+                const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + loc.latitude + '&longitude=' + loc.longitude +
+                    '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=3';
+                const weatherRes = await fetch(weatherUrl);
+                const w = await weatherRes.json();
+
+                let forecastHTML = '<div class="mt-3 pt-3 border-t border-nexora-border space-y-1.5 text-xs"><div class="font-semibold text-gray-300">3-Tage-Vorhersage:</div>';
+                for (let i = 0; i < w.daily.time.length; i++) {
+                    const dateFormatted = new Date(w.daily.time[i]).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+                    forecastHTML += '<div class="flex justify-between text-gray-400"><span>' + dateFormatted + '</span><span>' + w.daily.temperature_2m_min[i] + '° / ' + w.daily.temperature_2m_max[i] + '°C</span><span class="text-blue-400"><i class="fa-solid fa-droplet mr-1"></i>' + w.daily.precipitation_probability_max[i] + '%</span></div>';
+                }
+                forecastHTML += '</div>';
+
+                resultDiv.innerHTML =
+                    '<div class="flex items-center justify-between mb-2"><h4 class="font-bold text-white text-base">' + escapeHTML(loc.name) + ', ' + escapeHTML(loc.country || '') + '</h4><span class="text-2xl font-bold text-blue-400">' + w.current.temperature_2m + '°C</span></div>' +
+                    '<div class="grid grid-cols-2 gap-2 text-xs text-gray-300">' +
+                        '<div><i class="fa-solid fa-droplet text-blue-400 mr-1.5"></i>Luftfeuchte: ' + w.current.relative_humidity_2m + '%</div>' +
+                        '<div><i class="fa-solid fa-wind text-blue-400 mr-1.5"></i>Wind: ' + w.current.wind_speed_10m + ' km/h</div>' +
+                        '<div><i class="fa-solid fa-cloud-rain text-blue-400 mr-1.5"></i>Niederschlag: ' + w.current.precipitation + ' mm</div>' +
+                        '<div><i class="fa-solid fa-umbrella text-blue-400 mr-1.5"></i>Regenrisiko: ' + w.daily.precipitation_probability_max[0] + '%</div>' +
+                    '</div>' + forecastHTML;
+            } catch (err) {
+                resultDiv.innerHTML = '<span class="text-red-400">Fehler: ' + escapeHTML(err.message) + '</span>';
+            }
+        }
+
+        function renderCalendar() {
+            const year = calDate.getFullYear();
+            const month = calDate.getMonth();
+            const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+            document.getElementById('calendar-month-year').innerText = monthNames[month] + ' ' + year;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < startOffset; i++) {
+                grid.appendChild(document.createElement('div'));
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                const hasTasks = tasks.some(function(t) { return t.date === dateStr; });
+                const isSelected = dateStr === selectedDateStr;
+
+                const btn = document.createElement('button');
+                btn.className = 'p-1.5 rounded-lg relative transition ' + (isSelected ? 'bg-indigo-600 text-white font-bold' : 'text-gray-300 hover:bg-gray-800');
+                btn.innerText = d;
+                if (hasTasks && !isSelected) {
+                    btn.innerHTML += '<span class="w-1 h-1 bg-indigo-400 rounded-full absolute bottom-0.5 left-1/2 transform -translate-x-1/2"></span>';
+                }
+                btn.onclick = function() {
+                    selectedDateStr = dateStr;
+                    renderCalendar();
+                    renderTasks();
+                };
+                grid.appendChild(btn);
+            }
+            document.getElementById('selected-date-label').innerText = 'Termine & Aufgaben für ' + new Date(selectedDateStr).toLocaleDateString('de-DE');
+        }
+
+        function changeMonth(delta) {
+            calDate.setMonth(calDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+            const dayTasks = tasks.map(function(t, index) { return { item: t, idx: index }; })
+                                  .filter(function(entry) { return entry.item.date === selectedDateStr || !entry.item.date; });
+
+            if (dayTasks.length === 0) {
+                list.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">Keine Termine oder Aufgaben für diesen Tag.</p>';
+                return;
+            }
+
+            dayTasks.forEach(function(entry) {
+                const t = entry.item;
+                const idx = entry.idx;
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-xs';
+
+                const span = document.createElement('span');
+                span.className = t.done ? 'line-through text-gray-500' : 'text-gray-200';
+                span.innerText = t.text;
+
+                const actions = document.createElement('div');
+                actions.className = 'flex items-center space-x-2 ml-2';
+
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'text-emerald-400 hover:text-emerald-300';
+                toggleBtn.innerHTML = '<i class="fa-solid ' + (t.done ? 'fa-rotate-left' : 'fa-check') + '"></i>';
+                toggleBtn.onclick = function() { toggleTask(idx); };
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'text-gray-500 hover:text-red-400';
+                delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                delBtn.onclick = function() { deleteTask(idx); };
+
+                actions.appendChild(toggleBtn);
+                actions.appendChild(delBtn);
+                div.appendChild(span);
+                div.appendChild(actions);
+                list.appendChild(div);
+            });
+        }
+
+        function addTask() {
+            const input = document.getElementById('task-input');
+            const text = input.value.trim();
+            if (!text) return;
+            tasks.push({ text: text, done: false, date: selectedDateStr });
+            input.value = '';
+            localStorage.setItem('nexora_tasks_v5', JSON.stringify(tasks));
+            renderCalendar();
+            renderTasks();
+        }
+
+        function toggleTask(idx) {
+            tasks[idx].done = !tasks[idx].done;
+            localStorage.setItem('nexora_tasks_v5', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function deleteTask(idx) {
+            tasks.splice(idx, 1);
+            localStorage.setItem('nexora_tasks_v5', JSON.stringify(tasks));
+            renderCalendar();
+            renderTasks();
+        }
+
+        function renderMemories() {
+            const list = document.getElementById('memory-list');
+            list.innerHTML = '';
+            if (memories.length === 0) {
+                list.innerHTML = '<p class="text-xs text-gray-500 text-center py-3">Noch keine Erinnerungen gespeichert.</p>';
+                return;
+            }
+            memories.forEach(function(m, idx) {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-nexora-dark border border-nexora-border rounded-xl px-3 py-2 text-sm text-gray-200';
+                const span = document.createElement('span');
+                span.className = 'truncate pr-2';
+                span.innerText = m;
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'text-gray-500 hover:text-red-400 flex-shrink-0';
+                delBtn.innerHTML = '<i class="fa-solid fa-trash text-xs"></i>';
+                delBtn.onclick = function() { deleteMemory(idx); };
+
+                div.appendChild(span);
+                div.appendChild(delBtn);
+                list.appendChild(div);
+            });
+        }
+
+        function addMemory() {
+            const input = document.getElementById('memory-input');
+            const text = input.value.trim();
+            if (!text) return;
+            memories.push(text);
+            input.value = '';
+            localStorage.setItem('nexora_memories_v5', JSON.stringify(memories));
+            renderMemories();
+        }
+
+        function deleteMemory(idx) {
+            memories.splice(idx, 1);
+            localStorage.setItem('nexora_memories_v5', JSON.stringify(memories));
+            renderMemories();
+        }
+
+        async function saveSettings() {
+            selectedModel = document.getElementById('model-select').value;
+            localStorage.setItem('nexora_model', selectedModel);
+            document.getElementById('current-model-info').innerText = 'Modell: ' + selectedModel;
+            await loadPersistentApiSettings();
+            alert('Modell-Einstellung gespeichert. Der API-Schlüssel bleibt sicher auf dem NEXORA-Server.');
+        }
+
+        async function testAPIConnection() {
+            const resBox = document.getElementById('api-test-result');
+            resBox.className = 'p-3 rounded-xl text-xs border border-blue-500/40 bg-blue-500/10 text-blue-300';
+            resBox.innerText = 'Teste die sichere NEXORA-Verbindung...';
+            resBox.classList.remove('hidden');
+            try {
+                const response = await fetch(NEXORA_API_URL + '/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    cache: 'no-store',
+                    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Antworte nur mit: Verbindung erfolgreich.' }] }] })
+                });
+                const data = await response.json().catch(function() { return {}; });
+                if (!response.ok || data.ok === false) throw new Error(data.error && data.error.message ? data.error.message : 'Status ' + response.status);
+                const reply = typeof data.text === 'string' ? data.text : 'Antwort erhalten.';
+                resBox.className = 'p-3 rounded-xl text-xs border border-emerald-500/40 bg-emerald-500/10 text-emerald-300';
+                resBox.innerText = '✅ Erfolg! NEXORA antwortet: "' + reply.trim() + '"';
+                await loadPersistentApiSettings();
+            } catch (err) {
+                resBox.className = 'p-3 rounded-xl text-xs border border-red-500/40 bg-red-500/10 text-red-300';
+                resBox.innerText = '❌ Verbindung fehlgeschlagen: ' + err.message;
+            }
+        }
+
+        function exportBackup() {
+            const backupData = {
+                version: '5.0',
+                exportedAt: new Date().toISOString(),
+                username: username,
+                chats: chats,
+                memories: memories,
+                tasks: tasks
+            };
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'NEXORA_5.0_Backup_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importBackup(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if (data.chats) { chats = data.chats; saveChats(); }
+                    if (data.memories) { memories = data.memories; localStorage.setItem('nexora_memories_v5', JSON.stringify(memories)); }
+                    if (data.tasks) { tasks = data.tasks; localStorage.setItem('nexora_tasks_v5', JSON.stringify(tasks)); }
+                    if (data.username) { username = data.username; localStorage.setItem('nexora_username', username); document.getElementById('sidebar-username').innerText = username; }
+                    renderChatHistory();
+                    renderMemories();
+                    renderCalendar();
+                    renderTasks();
+                    if (chats.length > 0) loadChat(chats[0].id);
+                    alert('Backup erfolgreich wiederhergestellt!');
+                } catch (err) {
+                    alert('Ungültige Backup-Datei: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Lokaler Adminbereich: einfache Code-Sperre, keine echte Server-Authentifizierung.
+        function openAdminGate() {
+            document.getElementById('admin-code-input').value = '';
+            document.getElementById('admin-login-error').classList.add('hidden');
+            openModal('admin-login-modal');
+            setTimeout(function(){ document.getElementById('admin-code-input').focus(); }, 50);
+        }
+
+        function verifyAdminCode() {
+            const savedCode = localStorage.getItem('nexora_admin_code') || '862317';
+            const entered = document.getElementById('admin-code-input').value;
+            if (entered !== savedCode) {
+                document.getElementById('admin-login-error').classList.remove('hidden');
+                return;
+            }
+            closeModal('admin-login-modal');
+            document.getElementById('admin-welcome-input').value = localStorage.getItem('nexora_welcome_text') || 'Deine persönliche KI für alles. Stelle komplexe Fragen, analysiere PDF/DOCX/Bilder, recherchiere im Web oder verwalte deinen Kalender.';
+            document.getElementById('admin-maintenance-input').checked = localStorage.getItem('nexora_maintenance') === 'true';
+            document.getElementById('admin-api-status').innerText = apiConnected ? 'Verbunden (Cloudflare)' : 'Verbindung wird geprüft';
+            showAdminTab('overview');
+            openModal('admin-center-modal');
+        }
+
+        function closeAdminCenter() { closeModal('admin-center-modal'); }
+
+        function showAdminTab(name) {
+            document.querySelectorAll('.admin-panel').forEach(function(panel){ panel.classList.add('hidden'); });
+            const target = document.getElementById('admin-tab-' + name);
+            if (target) target.classList.remove('hidden');
+            document.querySelectorAll('.admin-tab').forEach(function(btn){
+                btn.className = 'admin-tab w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800';
+            });
+            const buttons = Array.from(document.querySelectorAll('.admin-tab'));
+            const index = ['overview','general','update','security'].indexOf(name);
+            if (buttons[index]) buttons[index].className = 'admin-tab w-full text-left px-3 py-2 rounded-lg text-sm bg-amber-500/15 text-amber-300';
+        }
+
+        function saveAdminGeneralSettings() {
+            const greeting = document.getElementById('admin-welcome-input').value.trim();
+            localStorage.setItem('nexora_welcome_text', greeting);
+            localStorage.setItem('nexora_maintenance', document.getElementById('admin-maintenance-input').checked ? 'true' : 'false');
+            const status = document.getElementById('admin-general-status');
+            status.innerText = 'Einstellungen wurden lokal gespeichert.';
+            const greetingNode = document.getElementById('nexora-welcome-text');
+            if (greetingNode) greetingNode.textContent = greeting;
+        }
+
+        function changeAdminCode() {
+            const next = document.getElementById('admin-new-code').value.trim();
+            const status = document.getElementById('admin-code-status');
+            if (next.length < 6) { status.innerText = 'Bitte mindestens 6 Zeichen eingeben.'; status.className = 'text-xs text-red-400'; return; }
+            localStorage.setItem('nexora_admin_code', next);
+            document.getElementById('admin-new-code').value = '';
+            status.innerText = 'Admin-Code wurde geändert.';
+            status.className = 'text-xs text-emerald-400';
+        }
+
+        async function processNexoraUpdate() {
+            const input = document.getElementById('admin-update-file');
+            const status = document.getElementById('admin-update-status');
+            const file = input.files && input.files[0];
+            if (!file) { status.innerText = 'Bitte zuerst eine HTML- oder ZIP-Datei auswählen.'; return; }
+            status.innerText = 'Datei wird geprüft...';
+            try {
+                let html = '';
+                if (/\.zip$/i.test(file.name)) {
+                    if (typeof JSZip === 'undefined') throw new Error('ZIP-Unterstützung konnte nicht geladen werden. Prüfe deine Internetverbindung oder wähle die index.html direkt aus.');
+                    const zip = await JSZip.loadAsync(file);
+                    let entry = zip.file(/^index\.html$/i)[0];
+                    if (!entry) entry = zip.file(/(^|\/)index\.html$/i)[0];
+                    if (!entry) throw new Error('Im ZIP wurde keine index.html gefunden.');
+                    html = await entry.async('string');
+                } else {
+                    html = await file.text();
+                }
+                if (!/<\s*html[\s>]/i.test(html) || !/<\s*body[\s>]/i.test(html)) throw new Error('Die ausgewählte Datei sieht nicht wie eine vollständige HTML-Seite aus.');
+                const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'NEXORA_UPDATE_index.html';
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
+                status.innerText = 'Update geprüft. NEXORA_UPDATE_index.html wurde heruntergeladen. Erstelle zuerst ein Backup und ersetze danach deine bisherige index.html im NEXORA-Ordner.';
+            } catch (err) {
+                status.innerText = 'Update konnte nicht vorbereitet werden: ' + err.message;
+            }
+        }
+
+        function saveUsername() {
+            const val = document.getElementById('username-input').value.trim();
+            if (val) {
+                username = val;
+                localStorage.setItem('nexora_username', username);
+                document.getElementById('sidebar-username').innerText = username;
+                closeModal('login-modal');
+            }
+        }
+
+        function toggleWebSearch() {
+            webSearchEnabled = !webSearchEnabled;
+            const btn = document.getElementById('web-search-toggle');
+            const label = document.getElementById('web-search-label');
+            if (webSearchEnabled) {
+                btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium border border-blue-500 bg-blue-500/15 text-blue-300 transition flex items-center space-x-1.5';
+                label.innerText = 'Websuche: An';
+            } else {
+                btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-700 text-gray-400 hover:border-blue-500 hover:text-blue-400 transition flex items-center space-x-1.5';
+                label.innerText = 'Websuche: Aus';
+            }
+        }
+    </script>
+
+    <div id="nexora-voice-orb-label" aria-live="polite">Sprachkugel</div>
+    <button id="nexora-voice-orb" type="button" onclick="toggleVoiceInput()" aria-label="NEXORA Sprachsteuerung starten oder stoppen" title="Klicken und sprechen">
+      <i class="fa-solid fa-microphone"></i>
+    </button>
+
+</body>
+</html>
