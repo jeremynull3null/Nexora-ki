@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>NEXORA 5.4 – Kostenlose Bildgenerierung – Die KI für alles</title>
+    <title>NEXORA – Die KI für alles</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -410,7 +410,7 @@
                     <section id="admin-tab-overview" class="admin-panel space-y-4">
                         <h3 class="text-lg font-semibold text-white">Systemübersicht</h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div class="rounded-xl border border-nexora-border bg-nexora-dark p-4"><p class="text-xs text-gray-400">Version</p><p class="text-lg font-bold text-white">NEXORA 5.1</p></div>
+                            <div class="rounded-xl border border-nexora-border bg-nexora-dark p-4"><p class="text-xs text-gray-400">Version</p><p class="text-lg font-bold text-white">NEXORA</p></div>
                             <div class="rounded-xl border border-nexora-border bg-nexora-dark p-4"><p class="text-xs text-gray-400">API-Status</p><p id="admin-api-status" class="text-lg font-bold text-white">Wird geprüft</p></div>
                             <div class="rounded-xl border border-nexora-border bg-nexora-dark p-4"><p class="text-xs text-gray-400">Speicher</p><p class="text-lg font-bold text-white">Lokal im Browser</p></div>
                         </div>
@@ -478,7 +478,7 @@
         let currentChatId = null;
         let memories = readStoredArray('nexora_memories_v5');
         let tasks = readStoredArray('nexora_tasks_v5');
-        const NEXORA_API_URL = 'https://nexora-api.jeremy-freu.workers.dev';
+        const NEXORA_API_URL = 'https://ancient-waterfall-5c99.jeremy-freu.workers.dev';
         let apiConnected = false;
         let selectedModel = localStorage.getItem('nexora_model') || 'gemini-3.8-flash';
         const supportedModels = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
@@ -508,7 +508,7 @@
             document.getElementById('sidebar-username').innerText = username;
             document.getElementById('username-input').value = username;
             document.getElementById('model-select').value = selectedModel;
-            document.getElementById('current-model-info').innerText = 'Modell: ' + selectedModel;
+            document.getElementById('current-model-info').innerText = 'Gemini über NEXORA-Cloudflare';
             const savedGreeting = localStorage.getItem('nexora_welcome_text');
             if (savedGreeting !== null) { const greetingNode = document.getElementById('nexora-welcome-text'); if (greetingNode) greetingNode.textContent = savedGreeting; }
             updateConnectionBadge();
@@ -533,7 +533,7 @@
                 const response = await fetch(NEXORA_API_URL + '/health', { cache: 'no-store' });
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 const status = await response.json();
-                apiConnected = status.ok === true && status.keyConfigured === true;
+                apiConnected = status.ok === true && status.geminiConfigured === true;
                 updateConnectionBadge();
                 const adminStatus = document.getElementById('admin-api-status');
                 if (adminStatus) adminStatus.innerText = apiConnected ? 'Verbunden (Cloudflare)' : 'Backend-Schlüssel fehlt';
@@ -598,7 +598,7 @@
                         '<div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 mx-auto flex items-center justify-center glow-effect mb-4">' +
                             '<i class="fa-solid fa-brain text-white text-2xl"></i>' +
                         '</div>' +
-                        '<h3 class="text-2xl font-bold text-white">Willkommen bei NEXORA 5.1</h3>' +
+                        '<h3 class="text-2xl font-bold text-white">Willkommen bei NEXORA</h3>' +
                         '<p id="nexora-welcome-text" class="text-gray-400 max-w-lg mx-auto text-sm">Deine persönliche KI für alles. Stelle komplexe Fragen, analysiere PDF/DOCX/Bilder, recherchiere im Web oder verwalte deinen Kalender.</p>' +
                         '<div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 text-left">' +
                             '<div onclick="quickPrompt(&quot;Erkläre mir verständlich, wie ein Quantencomputer funktioniert.&quot;)" class="p-4 rounded-xl bg-nexora-card border border-nexora-border hover:border-blue-500/50 cursor-pointer transition">' +
@@ -842,72 +842,65 @@
         }
 
         async function generateImageFree(prompt) {
-            const base = 'https://aihorde.net/api/v2';
             const cleanPrompt = (prompt || '').trim();
             if (!cleanPrompt) throw new Error('Bitte beschreibe, welches Bild ich erstellen soll.');
 
-            // Ein persönlicher AI-Horde-Schlüssel ist optional. Er wird nur lokal
-            // in diesem Browser gespeichert und verhindert die gemeinsame anonyme Quote.
-            let personalKey = '';
-            try { personalKey = localStorage.getItem('nexora_ai_horde_api_key') || ''; } catch (e) {}
-            const makeHeaders = function(key) {
-                return {
-                    'Content-Type': 'application/json',
-                    'apikey': key || '0000000000',
-                    'Client-Agent': 'NEXORA:5.4:free-image-generation'
-                };
-            };
-            const submitJob = async function(key) {
-                return await fetch(base + '/generate/async', {
-                    method: 'POST', headers: makeHeaders(key),
-                    body: JSON.stringify({
-                        prompt: cleanPrompt,
-                        params: { width: 512, height: 512, steps: 25, cfg_scale: 7, n: 1 },
-                        nsfw: false, censor_nsfw: true, r2: true, models: []
-                    })
-                });
-            };
+            const submitResponse = await fetch(NEXORA_API_URL + '/api/image/async', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: cleanPrompt })
+            });
 
-            let submitResponse = await submitJob(personalKey);
-            if (submitResponse.status === 429 && !personalKey) {
-                const enteredKey = window.prompt(
-                    'Das anonyme Kontingent von AI Horde ist ausgeschöpft. Wenn du einen persönlichen AI-Horde-API-Schlüssel hast, kannst du ihn hier einfügen. Er wird nur lokal in diesem Browser gespeichert. Ohne Schlüssel kannst du später erneut versuchen.'
-                );
-                if (enteredKey && enteredKey.trim()) {
-                    personalKey = enteredKey.trim();
-                    try { localStorage.setItem('nexora_ai_horde_api_key', personalKey); } catch (e) {}
-                    submitResponse = await submitJob(personalKey);
-                }
+            const submitted = await submitResponse.json().catch(function(){ return {}; });
+            if (!submitResponse.ok || !submitted.ok || !submitted.id) {
+                const message = submitted.error && submitted.error.message
+                    ? submitted.error.message
+                    : 'AI Horde konnte den Bildauftrag nicht annehmen (HTTP ' + submitResponse.status + ').';
+                throw new Error(message);
             }
-            if (!submitResponse.ok) {
-                const msg = await submitResponse.text().catch(function(){ return ''; });
-                if (submitResponse.status === 429) {
-                    throw new Error('AI Horde hat die Anfrage wegen eines ausgeschöpften Kontingents abgelehnt (HTTP 429). Versuche es später erneut oder verwende einen persönlichen AI-Horde-Schlüssel. Es gibt keinen garantierten unbegrenzten kostenlosen Bilddienst.');
-                }
-                throw new Error('Der kostenlose Bilddienst nimmt die Anfrage gerade nicht an (HTTP ' + submitResponse.status + '). ' + msg.slice(0, 180));
-            }
-            const submitted = await submitResponse.json();
-            if (!submitted.id) throw new Error('Der Bilddienst hat keine Auftragsnummer zurückgegeben.');
 
-            const headers = makeHeaders(personalKey);
             const started = Date.now();
             while (Date.now() - started < 360000) {
                 await new Promise(function(resolve) { setTimeout(resolve, 4000); });
-                const checkResponse = await fetch(base + '/generate/check/' + encodeURIComponent(submitted.id), { headers: headers });
-                if (!checkResponse.ok) throw new Error('Der Status der Bildgenerierung konnte nicht abgefragt werden.');
-                const check = await checkResponse.json();
-                if (check.faulted) throw new Error('Die Bildgenerierung ist beim kostenlosen Dienst fehlgeschlagen. Bitte versuche es erneut.');
-                if (check.done || (check.finished && check.finished > 0)) {
-                    const statusResponse = await fetch(base + '/generate/status/' + encodeURIComponent(submitted.id), { headers: headers });
-                    if (!statusResponse.ok) throw new Error('Das fertige Bild konnte nicht abgerufen werden.');
-                    const status = await statusResponse.json();
+
+                const checkResponse = await fetch(
+                    NEXORA_API_URL + '/api/image/check/' + encodeURIComponent(submitted.id),
+                    { cache: 'no-store' }
+                );
+                const check = await checkResponse.json().catch(function(){ return {}; });
+
+                if (!checkResponse.ok || !check.ok) {
+                    throw new Error(check.error && check.error.message
+                        ? check.error.message
+                        : 'Der Bildstatus konnte nicht abgefragt werden.');
+                }
+
+                if (check.done) {
+                    const statusResponse = await fetch(
+                        NEXORA_API_URL + '/api/image/status/' + encodeURIComponent(submitted.id),
+                        { cache: 'no-store' }
+                    );
+                    const status = await statusResponse.json().catch(function(){ return {}; });
+
+                    if (!statusResponse.ok || !status.ok) {
+                        throw new Error(status.error && status.error.message
+                            ? status.error.message
+                            : 'Das fertige Bild konnte nicht abgerufen werden.');
+                    }
+
                     const generation = status.generations && status.generations[0];
-                    if (!generation || !generation.img) throw new Error('Der Dienst hat kein Bild geliefert.');
+                    if (!generation || !generation.img) {
+                        throw new Error('AI Horde hat noch kein fertiges Bild geliefert.');
+                    }
+
                     const imageUrl = generation.img;
-                    return '## Dein Bild ist fertig!\n\n![Von NEXORA erstelltes Bild](' + imageUrl + ')\n\n[ Bild öffnen / speichern ](' + imageUrl + ')\n\n*Erstellt mit AI Horde. Die Verfügbarkeit und Wartezeit hängen von freiwilligen Community-Workern und den Dienstlimits ab.*';
+                    return '## Dein Bild ist fertig!\\n\\n![Von NEXORA erstelltes Bild](' +
+                        imageUrl + ')\\n\\n[ Bild öffnen / speichern ](' + imageUrl +
+                        ')\\n\\n*Erstellt mit AI Horde. Wartezeit und Verfügbarkeit hängen von den Community-Workern ab.*';
                 }
             }
-            throw new Error('Die Warteschlange dauert gerade zu lange. Dein Auftrag wurde nicht rechtzeitig fertig. Bitte versuche es später erneut.');
+
+            throw new Error('Die Bildgenerierung dauert zu lange. Bitte versuche es später erneut.');
         }
 
 
@@ -1084,85 +1077,69 @@
         }
 
         async function callGeminiAPI(prompt, webContext, imageBase64, imageMime) {
-            const url = NEXORA_API_URL + '/api/generate';
+            if (imageBase64) {
+                throw new Error('Die Bildanalyse wird gerade an die neue API angepasst. Bitte sende zunächst eine Textfrage oder lade eine PDF-/DOCX-Datei hoch.');
+            }
 
-            let systemParts = [
-                'Du bist NEXORA 5.4, ein freundlicher, hilfsbereiter und präziser persönlicher KI-Assistent.',
+            const systemParts = [
+                'Du bist NEXORA, ein freundlicher, hilfsbereiter und präziser persönlicher KI-Assistent.',
                 'Antworte natürlich, klar und strukturiert auf Deutsch.',
                 'Aktuelles Datum: ' + new Date().toLocaleDateString('de-DE') + '.',
                 'Nutzername: ' + username + '.'
             ];
 
             if (memories.length > 0) {
-                systemParts.push('Gespeicherte Informationen über den Nutzer (Langzeitgedächtnis):\n' + memories.map(function(m) { return '- ' + m; }).join('\n'));
+                systemParts.push('Gespeicherte Informationen über den Nutzer (Langzeitgedächtnis):\\n' +
+                    memories.map(function(m) { return '- ' + m; }).join('\\n'));
             }
 
             if (webContext) {
-                systemParts.push('Aktuelle Live-Suchergebnisse aus dem Internet zu dieser Anfrage:\n' + webContext + '\nNutze diese Informationen, um aktuell und faktenbasiert zu antworten.');
+                systemParts.push('Zusätzlicher Web-Kontext:\\n' + webContext +
+                    '\\nNutze diese Informationen, wenn sie für die Antwort relevant sind.');
             }
 
             const chat = chats.find(function(c) { return c.id === currentChatId; });
-            let contents = [];
+            const contents = [];
 
             if (chat && chat.messages.length > 1) {
-                const historySlice = chat.messages.slice(0, -1).slice(-8);
-                historySlice.forEach(function(m) {
+                chat.messages.slice(0, -1).slice(-8).forEach(function(m) {
                     contents.push({
                         role: m.role === 'user' ? 'user' : 'model',
-                        parts: [{ text: m.content }]
+                        parts: [{ text: String(m.content || '').slice(0, 12000) }]
                     });
-                });
-            }
-
-            let userParts = [{ text: prompt }];
-            if (imageBase64 && imageMime) {
-                userParts.push({
-                    inline_data: {
-                        mime_type: imageMime,
-                        data: imageBase64
-                    }
                 });
             }
 
             contents.push({
                 role: 'user',
-                parts: userParts
+                parts: [{ text: String(prompt || '').slice(0, 12000) }]
             });
 
-            const payload = {
-                system_instruction: {
-                    parts: [{ text: systemParts.join('\n\n') }]
-                },
-                contents: contents
-            };
-
-            const response = await fetch(url, {
+            const response = await fetch(NEXORA_API_URL + '/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: selectedModel, payload: payload })
+                cache: 'no-store',
+                body: JSON.stringify({
+                    contents: contents,
+                    systemInstruction: systemParts.join('\\n\\n')
+                })
             });
 
-            if (!response.ok) {
-                let errMsg = 'HTTP-Fehler ' + response.status;
-                try {
-                    const errData = await response.json();
-                    if (errData.error && errData.error.message) {
-                        errMsg = errData.error.message;
-                    }
-                } catch (e) {}
+            const data = await response.json().catch(function(){ return {}; });
+            if (!response.ok || !data.ok) {
+                const message = data.error && data.error.message
+                    ? data.error.message
+                    : 'HTTP-Fehler ' + response.status;
                 if (response.status === 429) {
-                    throw new Error('Kostenloses Nutzungslimit (Rate Limit) kurzzeitig erreicht. Bitte warte einen Moment und versuche es erneut. (' + errMsg + ')');
+                    throw new Error('Das Gemini-Nutzungslimit wurde erreicht. Bitte warte kurz und versuche es erneut. ' + message);
                 }
-                throw new Error(errMsg);
+                throw new Error(message);
             }
 
-            const data = await response.json();
-            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                throw new Error('Keine gültige Antwort vom KI-Modell erhalten.');
+            if (typeof data.text !== 'string' || !data.text.trim()) {
+                throw new Error('Gemini hat keinen Antworttext zurückgegeben.');
             }
-            const textParts = (data.candidates[0].content.parts || []).filter(function(part) { return typeof part.text === 'string'; });
-            if (textParts.length === 0) throw new Error('Die KI hat keinen Text zurückgegeben.');
-            return textParts.map(function(part) { return part.text; }).join('\n');
+            return data.text.trim();
         }
 
         function appendMessageUI(role, content, save) {
@@ -1629,39 +1606,41 @@
         async function saveSettings() {
             selectedModel = document.getElementById('model-select').value;
             localStorage.setItem('nexora_model', selectedModel);
-            document.getElementById('current-model-info').innerText = 'Modell: ' + selectedModel;
+            document.getElementById('current-model-info').innerText = 'Gemini über NEXORA-Cloudflare';
             await loadPersistentApiSettings();
             alert('Modell-Einstellung gespeichert. Der API-Schlüssel bleibt sicher auf dem NEXORA-Server.');
         }
 
         async function testAPIConnection() {
-            const modelToTest = document.getElementById('model-select').value;
             const resBox = document.getElementById('api-test-result');
             resBox.className = 'p-3 rounded-xl text-xs border border-blue-500/40 bg-blue-500/10 text-blue-300';
             resBox.innerText = 'Teste die sichere NEXORA-Verbindung...';
             resBox.classList.remove('hidden');
 
             try {
-                const response = await fetch(NEXORA_API_URL + '/api/generate', {
+                const response = await fetch(NEXORA_API_URL + '/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    cache: 'no-store',
                     body: JSON.stringify({
-                        model: modelToTest,
-                        payload: {
-                            contents: [{ role: 'user', parts: [{ text: 'Antworte nur mit: Verbindung erfolgreich.' }] }]
-                        }
+                        contents: [{
+                            role: 'user',
+                            parts: [{ text: 'Antworte nur mit: Verbindung erfolgreich.' }]
+                        }],
+                        systemInstruction: 'Du bist NEXORA. Antworte kurz auf Deutsch.'
                     })
                 });
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error((data.error && data.error.message) || data.error || 'Status ' + response.status);
+
+                const data = await response.json().catch(function(){ return {}; });
+                if (!response.ok || !data.ok) {
+                    throw new Error(data.error && data.error.message
+                        ? data.error.message
+                        : 'Status ' + response.status);
                 }
-                const reply = data.candidates && data.candidates[0] && data.candidates[0].content &&
-                    data.candidates[0].content.parts && data.candidates[0].content.parts[0]
-                    ? data.candidates[0].content.parts[0].text : 'Antwort erhalten.';
+
                 resBox.className = 'p-3 rounded-xl text-xs border border-emerald-500/40 bg-emerald-500/10 text-emerald-300';
-                resBox.innerText = '✅ Erfolg! NEXORA antwortet: "' + String(reply || '').trim() + '"';
-                await saveSettings();
+                resBox.innerText = '✅ Erfolg! NEXORA antwortet: "' + String(data.text || '').trim() + '"';
+                await loadPersistentApiSettings();
             } catch (err) {
                 resBox.className = 'p-3 rounded-xl text-xs border border-red-500/40 bg-red-500/10 text-red-300';
                 resBox.innerText = '❌ Verbindung fehlgeschlagen: ' + err.message;
